@@ -333,6 +333,13 @@
       padding: 9px 8px;
       white-space: nowrap;
     }
+    thead th.sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+    thead th.sortable.active {
+      color: #d8f7ff;
+    }
 
     tbody td {
       font-size: 12.5px;
@@ -813,17 +820,17 @@
 
     <div class="grid market-only">
       <div class="card">
-        <h3 class="section-title">现货 USDT（24h 成交额降序）</h3>
-        <p class="sub-note">满足“现货从高到底”</p>
+        <h3 class="section-title">现货 USDT（默认按成交量降序）</h3>
+        <p class="sub-note">可点击表头切换排序</p>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>#</th>
-                <th>交易对</th>
-                <th>最新价</th>
-                <th>24h涨跌%</th>
-                <th>24h成交额(USDT)</th>
+                <th class="sortable" data-sort-table="spot" data-sort-key="symbol">交易对</th>
+                <th class="sortable" data-sort-table="spot" data-sort-key="price">最新价</th>
+                <th class="sortable" data-sort-table="spot" data-sort-key="changePct">24h涨跌%</th>
+                <th class="sortable active" data-sort-table="spot" data-sort-key="quoteVol">24h成交额(USDT) ↓</th>
               </tr>
             </thead>
             <tbody id="spotBody"></tbody>
@@ -832,19 +839,19 @@
       </div>
 
       <div class="card">
-        <h3 class="section-title">合约 USDT（24h 成交额降序）</h3>
-      <p class="sub-note">满足“合约从高到底”，并增加资金费率与资金周期</p>
+        <h3 class="section-title">合约 USDT（默认按资金费率降序）</h3>
+      <p class="sub-note">可点击表头切换排序</p>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>#</th>
-                <th>交易对</th>
-                <th>最新价</th>
-                <th>24h涨跌%</th>
-                <th>24h成交额(USDT)</th>
-                <th>资金费率(每期)</th>
-                <th>资金周期(h)</th>
+                <th class="sortable" data-sort-table="futures" data-sort-key="symbol">交易对</th>
+                <th class="sortable" data-sort-table="futures" data-sort-key="price">最新价</th>
+                <th class="sortable" data-sort-table="futures" data-sort-key="changePct">24h涨跌%</th>
+                <th class="sortable" data-sort-table="futures" data-sort-key="quoteVol">24h成交额(USDT)</th>
+                <th class="sortable active" data-sort-table="futures" data-sort-key="fundingPct">资金费率(每期) ↓</th>
+                <th class="sortable" data-sort-table="futures" data-sort-key="fundingIntervalHours">资金周期(h)</th>
               </tr>
             </thead>
             <tbody id="futuresBody"></tbody>
@@ -1001,6 +1008,8 @@
       bybit: { ok: false, count: 0, note: "未拉取" },
       okx: { ok: false, count: 0, note: "未拉取" }
     };
+    let spotSortState = { key: "quoteVol", direction: "desc" };
+    let futuresSortState = { key: "fundingPct", direction: "desc" };
     let manualAnalyzeTimer = null;
 
     const num = (v) => {
@@ -1037,6 +1046,42 @@
       const cls = n > 0 ? "pos" : n < 0 ? "neg" : "";
       return `<span class="${cls}">${n.toFixed(d)}%</span>`;
     };
+
+    function sortRowsByState(rows, state) {
+      const { key, direction } = state;
+      const sign = direction === "asc" ? 1 : -1;
+      const copy = rows.slice();
+      copy.sort((a, b) => {
+        const av = a?.[key];
+        const bv = b?.[key];
+        if (typeof av === "string" || typeof bv === "string") {
+          return sign * String(av ?? "").localeCompare(String(bv ?? ""));
+        }
+        const an = Number.isFinite(Number(av)) ? Number(av) : -Infinity;
+        const bn = Number.isFinite(Number(bv)) ? Number(bv) : -Infinity;
+        return sign * (an - bn);
+      });
+      return copy;
+    }
+
+    function updateSortableHeaderUI() {
+      document.querySelectorAll("th.sortable[data-sort-table][data-sort-key]").forEach((th) => {
+        const table = th.dataset.sortTable;
+        const key = th.dataset.sortKey;
+        const base = String(th.textContent || "").replace(/[↑↓]\s*$/, "").trim();
+        let active = false;
+        let dir = "";
+        if (table === "spot" && spotSortState.key === key) {
+          active = true;
+          dir = spotSortState.direction;
+        } else if (table === "futures" && futuresSortState.key === key) {
+          active = true;
+          dir = futuresSortState.direction;
+        }
+        th.classList.toggle("active", active);
+        th.textContent = active ? `${base} ${dir === "asc" ? "↑" : "↓"}` : base;
+      });
+    }
 
     function isLikelyCorsOrNetworkError(err) {
       const msg = String(err?.message || err || "");
@@ -3209,8 +3254,10 @@
 
     function render() {
       const kw = els.searchInput.value.trim().toUpperCase();
-      const spotFiltered = kw ? spotRows.filter((r) => r.symbol.includes(kw)) : spotRows;
-      const futuresFiltered = kw ? futuresRows.filter((r) => r.symbol.includes(kw)) : futuresRows;
+      const spotFilteredRaw = kw ? spotRows.filter((r) => r.symbol.includes(kw)) : spotRows;
+      const futuresFilteredRaw = kw ? futuresRows.filter((r) => r.symbol.includes(kw)) : futuresRows;
+      const spotFiltered = sortRowsByState(spotFilteredRaw, spotSortState);
+      const futuresFiltered = sortRowsByState(futuresFilteredRaw, futuresSortState);
       const arbFiltered = kw ? arbRows.filter((r) => r.symbol.includes(kw)) : arbRows;
       const crossFilteredRaw = kw ? crossExchangeArbRows.filter((r) => r.symbol.includes(kw)) : crossExchangeArbRows;
       const crossFiltered = crossFilteredRaw
@@ -3292,6 +3339,7 @@
           </tr>
         `).join("") || "<tr><td colspan='16' class='muted'>无匹配数据</td></tr>";
       }
+      updateSortableHeaderUI();
     }
 
     function clearAutoRefresh() {
@@ -3351,6 +3399,27 @@
     els.marketPageBtn.addEventListener("click", () => switchPage("market", { triggerAnalysis: false }));
     els.analysisPageBtn.addEventListener("click", () => switchPage("analysis", { triggerAnalysis: false }));
     els.searchInput.addEventListener("input", render);
+    document.querySelectorAll("th.sortable[data-sort-table][data-sort-key]").forEach((th) => {
+      th.addEventListener("click", () => {
+        const table = th.dataset.sortTable;
+        const key = th.dataset.sortKey;
+        if (!table || !key) return;
+        if (table === "spot") {
+          if (spotSortState.key === key) {
+            spotSortState.direction = spotSortState.direction === "asc" ? "desc" : "asc";
+          } else {
+            spotSortState = { key, direction: "desc" };
+          }
+        } else if (table === "futures") {
+          if (futuresSortState.key === key) {
+            futuresSortState.direction = futuresSortState.direction === "asc" ? "desc" : "asc";
+          } else {
+            futuresSortState = { key, direction: "desc" };
+          }
+        }
+        render();
+      });
+    });
     els.analysisSortSelect.addEventListener("change", () => {
       updateAnalysisSymbols();
     });
