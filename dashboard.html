@@ -1,0 +1,3403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Binance USDT 套利看板</title>
+  <style>
+    :root {
+      --bg: #060b16;
+      --panel: #0b1220;
+      --panel-2: #0f172a;
+      --line: #1f2a3d;
+      --text: #e2e8f0;
+      --muted: #8ea0bc;
+      --good: #22c55e;
+      --bad: #ef4444;
+      --warn: #f59e0b;
+      --cyan: #22d3ee;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 600px at 80% -20%, rgba(34, 211, 238, 0.12), transparent 60%),
+        radial-gradient(900px 400px at -10% -20%, rgba(59, 130, 246, 0.10), transparent 60%),
+        var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    .container {
+      width: min(1540px, 95vw);
+      margin: 20px auto 28px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00)), var(--panel);
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 24px;
+      letter-spacing: 0.3px;
+    }
+
+    .desc {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .controls {
+      display: grid;
+      gap: 12px;
+    }
+
+    .top-workbench {
+      display: grid;
+      grid-template-columns: minmax(620px, 1.45fr) minmax(360px, 0.9fr);
+      gap: 12px;
+      align-items: start;
+    }
+    .top-controls-col {
+      display: grid;
+      gap: 12px;
+    }
+    .top-controls-col .card {
+      margin-bottom: 0;
+    }
+    .page-nav {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 6px;
+      border: 1px solid #2a3a52;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.8), rgba(10, 19, 36, 0.8));
+    }
+    .page-nav-btn {
+      border: 1px solid #425472;
+      background: #0f1b31;
+      color: #cdd9ea;
+      font-weight: 600;
+      padding: 9px 14px;
+      border-radius: 10px;
+      letter-spacing: 0.2px;
+    }
+    .page-nav-btn.active {
+      border-color: #67e8f9;
+      color: #dffbff;
+      background: linear-gradient(180deg, rgba(34, 211, 238, 0.24), rgba(59, 130, 246, 0.2));
+      box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.32), 0 0 0 1px rgba(34, 211, 238, 0.15);
+    }
+    .page-nav-hint {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .page-market .analysis-only {
+      display: none !important;
+    }
+    .page-market .top-workbench {
+      grid-template-columns: 1fr;
+    }
+    .page-analysis .market-only {
+      display: none !important;
+    }
+    .page-analysis .top-workbench {
+      grid-template-columns: minmax(460px, 0.9fr) minmax(560px, 1.2fr);
+    }
+
+    .top-analysis {
+      position: sticky;
+      top: 12px;
+      max-height: none;
+      overflow: visible;
+    }
+
+    .top-analysis .section-title {
+      margin-bottom: 8px;
+    }
+
+    .control-group {
+      position: relative;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 12px 10px 14px;
+      border: 1px solid #253247;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(148, 163, 184, 0.06), rgba(15, 23, 42, 0.55));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    }
+
+    .control-group::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 10px;
+      bottom: 10px;
+      width: 3px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(34, 211, 238, 0.95), rgba(59, 130, 246, 0.65));
+    }
+
+    .control-group-title {
+      flex: 0 0 100%;
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #d6e5f7;
+      letter-spacing: 0.35px;
+      padding: 0;
+      margin: 0 0 2px;
+      white-space: nowrap;
+    }
+
+    .controls label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .analysis-symbol-price {
+      display: inline-block;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.15px;
+      color: #ecfeff;
+      border: 1px solid #335d7a;
+      border-left: 4px solid #22d3ee;
+      border-radius: 10px;
+      padding: 7px 11px;
+      background: linear-gradient(180deg, rgba(34, 211, 238, 0.14), rgba(30, 41, 59, 0.7));
+      white-space: nowrap;
+      margin-bottom: 8px;
+      box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.12);
+    }
+
+    input, select, button {
+      border: 1px solid #2b3a53;
+      background: #0a1324;
+      color: var(--text);
+      border-radius: 9px;
+      padding: 8px 10px;
+      font-size: 13px;
+    }
+
+    button {
+      cursor: pointer;
+      transition: all .15s ease;
+    }
+
+    button:hover {
+      border-color: var(--cyan);
+      color: #c8f7ff;
+    }
+
+    .status {
+      margin-top: 10px;
+      min-height: 20px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .source-lights {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .source-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid #334155;
+      border-radius: 999px;
+      padding: 3px 10px;
+      background: rgba(15, 23, 42, 0.45);
+    }
+    .source-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+    }
+    .source-dot.ok { background: #22c55e; }
+    .source-dot.warn { background: #f59e0b; }
+    .source-dot.err { background: #ef4444; }
+
+    .chips {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      border: 1px solid #243145;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 999px;
+      padding: 5px 10px;
+      color: #c6d3e6;
+      font-size: 12px;
+    }
+    .ex-tag {
+      display: inline-block;
+      border: 1px solid #3b4f6e;
+      border-radius: 999px;
+      padding: 1px 8px;
+      font-size: 11px;
+      color: #dbeafe;
+      background: rgba(30, 41, 59, 0.65);
+      margin-right: 4px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+    }
+
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel-2);
+      padding: 10px 12px;
+    }
+
+    .stat .k {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .stat .v {
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .section-title {
+      margin: 0 0 10px;
+      font-size: 15px;
+      color: #d6e5f7;
+    }
+
+    .sub-note {
+      margin: -4px 0 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .table-wrap {
+      max-height: 58vh;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 660px;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #0a1324;
+      color: #bbcee8;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      font-size: 12px;
+      padding: 9px 8px;
+      white-space: nowrap;
+    }
+
+    tbody td {
+      font-size: 12.5px;
+      border-bottom: 1px solid #172133;
+      padding: 8px;
+      white-space: nowrap;
+    }
+
+    tbody tr:hover {
+      background: rgba(34, 211, 238, 0.06);
+    }
+
+    .pos { color: var(--good); }
+    .neg { color: var(--bad); }
+    .warn { color: var(--warn); }
+    .muted { color: var(--muted); }
+    .analysis-box {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel-2);
+      padding: 12px;
+    }
+    .analysis-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .analysis-brief {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .analysis-glossary {
+      border: 1px dashed #334155;
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: rgba(10, 19, 36, 0.55);
+      margin-bottom: 10px;
+    }
+    .analysis-glossary summary {
+      cursor: pointer;
+      color: #dbeafe;
+      font-size: 13px;
+      font-weight: 600;
+      user-select: none;
+    }
+    .analysis-glossary-grid {
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #c9d7ec;
+    }
+    .analysis-glossary-group {
+      border: 1px solid #2a3a52;
+      border-radius: 10px;
+      padding: 8px;
+      background: rgba(15, 23, 42, 0.45);
+    }
+    .analysis-glossary-group-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #22d3ee;
+      margin-bottom: 6px;
+      letter-spacing: 0.2px;
+    }
+    .analysis-glossary-item {
+      margin-bottom: 6px;
+      border: 1px solid #314057;
+      border-radius: 8px;
+      padding: 6px 8px;
+      background: rgba(10, 19, 36, 0.65);
+    }
+    .analysis-glossary-item:last-child {
+      margin-bottom: 0;
+    }
+    .analysis-glossary-item b {
+      display: inline-block;
+      padding: 1px 7px;
+      border-radius: 999px;
+      border: 1px solid #425472;
+      background: rgba(148, 163, 184, 0.16);
+      color: #e2e8f0;
+      margin-right: 6px;
+    }
+    .analysis-glossary-note {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .analysis-result {
+      font-size: 13px;
+      line-height: 1.65;
+      color: #d7e3f5;
+    }
+    .analysis-hero {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .analysis-hero-main {
+      border: 1px solid #2b3a53;
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: rgba(15, 23, 42, 0.55);
+    }
+    .analysis-symbol {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      margin-bottom: 6px;
+    }
+    .analysis-badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .analysis-badge {
+      border-radius: 999px;
+      padding: 2px 10px;
+      font-size: 12px;
+      border: 1px solid #334155;
+      background: rgba(148, 163, 184, 0.1);
+      color: #dbeafe;
+    }
+    .analysis-badge.score {
+      font-weight: 700;
+    }
+    .analysis-action {
+      border: 1px solid #2b3a53;
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: rgba(15, 23, 42, 0.7);
+    }
+    .analysis-action-title {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .analysis-action-side {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .analysis-action-range {
+      font-size: 12px;
+      color: #c6d3e6;
+      line-height: 1.55;
+    }
+    .analysis-plan-source {
+      margin-top: 6px;
+      border-top: 1px dashed #35506c;
+      padding-top: 6px;
+      font-size: 12px;
+      line-height: 1.55;
+      color: #9fb2ce;
+    }
+    .analysis-plan-brief {
+      color: #c9d7ec;
+      margin-bottom: 4px;
+    }
+    .analysis-plan-list {
+      margin: 0;
+      padding-left: 16px;
+    }
+    .analysis-plan-list li {
+      margin: 2px 0;
+    }
+    .analysis-plan-source details {
+      margin-top: 6px;
+      border-top: 1px dotted #36506d;
+      padding-top: 5px;
+    }
+    .analysis-plan-source summary {
+      cursor: pointer;
+      user-select: none;
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+    .analysis-plan-source b {
+      color: #dbeafe;
+      margin-right: 4px;
+    }
+    .analysis-focus {
+      border: 1px solid #2b3a53;
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: rgba(10, 19, 36, 0.7);
+      margin-bottom: 10px;
+    }
+    .analysis-focus-title {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .analysis-focus-list {
+      margin: 0;
+      padding-left: 18px;
+    }
+    .analysis-focus-list li {
+      margin: 2px 0;
+      line-height: 1.5;
+    }
+    .analysis-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .analysis-metric {
+      border: 1px solid #2b3a53;
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: rgba(15, 23, 42, 0.55);
+    }
+    .analysis-metric .k {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 2px;
+      color: var(--muted);
+    }
+    .analysis-metric .v {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+    .analysis-metric-note {
+      margin-top: 4px;
+      font-size: 12px;
+      line-height: 1.45;
+      color: #9fb2ce;
+    }
+    .analysis-degrade {
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      background: rgba(245, 158, 11, 0.1);
+      color: #facc15;
+      border-radius: 8px;
+      font-size: 12px;
+      padding: 6px 8px;
+      margin: 8px 0 4px;
+    }
+    .analysis-details {
+      margin-top: 8px;
+      border-top: 1px dashed #334155;
+      padding-top: 6px;
+    }
+    .analysis-details summary {
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 12px;
+      user-select: none;
+    }
+    .analysis-details-text {
+      margin-top: 6px;
+      color: #c9d7ec;
+      line-height: 1.6;
+    }
+    .analysis-result .k {
+      color: var(--muted);
+      margin-right: 6px;
+    }
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 12px;
+      margin-top: 8px;
+    }
+    .grade {
+      display: inline-block;
+      min-width: 20px;
+      padding: 1px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+      color: #07111f;
+    }
+    .grade-a { background: #22c55e; }
+    .grade-b { background: #f59e0b; }
+    .grade-c { background: #ef4444; color: #fff; }
+    .risk-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .risk-tag {
+      border: 1px solid #334155;
+      border-radius: 999px;
+      font-size: 11px;
+      padding: 2px 8px;
+      color: #dbeafe;
+      background: rgba(148, 163, 184, 0.08);
+    }
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 1280px) {
+      .top-workbench {
+        grid-template-columns: 1fr;
+      }
+      .top-analysis {
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
+    }
+
+    @media (max-width: 1100px) {
+      .grid { grid-template-columns: 1fr; }
+      .analysis-grid { grid-template-columns: 1fr; }
+      .analysis-hero { grid-template-columns: 1fr; }
+      .analysis-metrics { grid-template-columns: 1fr; }
+      .analysis-glossary-grid { grid-template-columns: 1fr; }
+      .page-nav-hint {
+        margin-left: 0;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body class="page-market">
+  <div class="container">
+    <div class="card">
+      <h1>Binance USDT 现货 / 合约 / 套利看板</h1>
+      <p class="desc">
+        只保留 `*USDT` 交易对。现货与合约分开展示，均按 24h 成交额从高到低排序。<br />
+        基差 = (合约价 - 现货价) / 现货价。资金费按各交易对真实周期（1h/2h/4h/8h）估算收益。普通现货账户不能直接做空。
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="page-nav">
+        <button id="marketPageBtn" class="page-nav-btn active">行情套利分析</button>
+        <button id="analysisPageBtn" class="page-nav-btn">币种分析</button>
+        <span class="page-nav-hint">切换后会记住你上次所在页面。</span>
+      </div>
+    </div>
+
+    <div class="top-workbench">
+      <div class="top-controls-col">
+        <div class="card market-only">
+          <div class="controls">
+            <div class="control-group">
+              <span class="control-group-title">行情检索</span>
+              <button id="refreshBtn">手动刷新</button>
+              <label>自动刷新间隔(秒)</label>
+              <input id="intervalInput" type="number" min="5" step="1" value="60" />
+              <button id="toggleAutoBtn">开启自动刷新</button>
+              <label>搜索</label>
+              <input id="searchInput" type="text" placeholder="BTCUSDT" />
+            </div>
+            <div class="control-group">
+              <span class="control-group-title">成本参数</span>
+              <label>单边手续费(%)</label>
+              <input id="feeRateInput" type="number" min="0" step="0.001" value="0.04" />
+              <label>借币年化(%)</label>
+              <input id="borrowAprInput" type="number" min="0" step="0.1" value="8" />
+              <label>持仓时长(h)</label>
+              <input id="holdHoursInput" type="number" min="1" step="1" value="24" />
+            </div>
+          </div>
+          <div class="chips">
+            <span class="chip">基差>0：合约升水</span>
+            <span class="chip">基差<0：合约贴水</span>
+            <span class="chip">Funding>0：做多付费，适合现货多 + 合约空</span>
+            <span class="chip">Funding<0：做空付费，适合现货空 + 合约多（需杠杆借币）</span>
+          </div>
+          <div id="status" class="status">等待首次加载...</div>
+          <div id="sourceHealth" class="source-lights"></div>
+        </div>
+
+        <div class="card analysis-only">
+          <div class="controls">
+            <div class="control-group">
+              <span class="control-group-title">策略分析</span>
+              <label>分析模式</label>
+              <select id="analysisModeSelect">
+                <option value="manual">手动选币分析</option>
+                <option value="auto">自动推荐分析</option>
+              </select>
+              <label>币种</label>
+              <select id="analysisSymbolSelect"></select>
+              <label>选币排序</label>
+              <select id="analysisSortSelect">
+                <option value="volume">按成交额(高->低)</option>
+                <option value="alpha">按字母(A-Z)</option>
+                <option value="score">按评分(高->低)</option>
+              </select>
+              <label>自动推荐数量</label>
+              <input id="analysisTopNInput" type="number" min="3" max="200" step="1" value="8" />
+              <label><input id="analysisAlignOnlyChk" type="checkbox" /> 仅显示短长同向增强</label>
+              <label>长线方向过滤</label>
+              <select id="analysisLongBiasFilter">
+                <option value="all">不过滤（全部）</option>
+                <option value="long">仅长线偏多</option>
+                <option value="short">仅长线偏空</option>
+              </select>
+              <button id="runAnalysisBtn">运行分析</button>
+              <button id="downloadManualBtn">下载手动分析</button>
+              <button id="downloadAutoBtn">下载自动分析</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card top-analysis analysis-only">
+        <h3 class="section-title">因子分析引擎</h3>
+        <p class="sub-note">支持两种模式：手动选币分析，或刷新时自动扫描并推荐（含入场/止盈/止损，支持仅合约币）。</p>
+        <div class="analysis-box">
+          <div class="analysis-brief">已接因子：Funding、OI、大户多空、主动买卖、盘口失衡、盘口集中度（自定义）、RSI、ATR、MACD、ADX、Bollinger、VWAP、趋势结构、拥挤度组合、跨所共振。</div>
+          <details class="analysis-glossary">
+            <summary>查看名词说明与口径</summary>
+            <div class="analysis-glossary-grid">
+              <div class="analysis-glossary-group">
+                <div class="analysis-glossary-group-title">衍生品情绪</div>
+                <div class="analysis-glossary-item"><b>Funding</b>资金费率；正值多头付费，负值空头付费。</div>
+                <div class="analysis-glossary-item"><b>OI</b>未平仓合约量；上升通常表示新杠杆资金进场。</div>
+                <div class="analysis-glossary-item"><b>大户多空</b>大户账户多空比，偏离过大代表拥挤风险。</div>
+                <div class="analysis-glossary-item"><b>主动买卖</b>Taker 买卖比；高于均值偏多，低于均值偏空。</div>
+                <div class="analysis-glossary-item"><b>拥挤度组合</b>Funding+基差+OI 同向偏热时，提示多/空拥挤。</div>
+              </div>
+              <div class="analysis-glossary-group">
+                <div class="analysis-glossary-group-title">盘口与波动</div>
+                <div class="analysis-glossary-item"><b>盘口失衡</b>近价区买卖挂单厚度差，衡量承接/抛压。</div>
+                <div class="analysis-glossary-item"><b>盘口集中度</b>基于 depth 挂单金额计算，不是 Binance 原生字段。</div>
+                <div class="analysis-glossary-item"><b>RSI</b>价格强弱指标；高位偏热，低位偏冷。</div>
+                <div class="analysis-glossary-item"><b>ATR</b>波动幅度指标；越大代表波动越剧烈。</div>
+                <div class="analysis-glossary-item"><b>Bollinger</b>布林带位置；靠上轨偏热，靠下轨偏冷。</div>
+                <div class="analysis-glossary-item"><b>VWAP</b>成交量加权均价；偏离过大常有回归压力。</div>
+              </div>
+              <div class="analysis-glossary-group">
+                <div class="analysis-glossary-group-title">趋势与结论</div>
+                <div class="analysis-glossary-item"><b>MACD</b>动能方向与变化；柱体正负与收敛/发散看动能。</div>
+                <div class="analysis-glossary-item"><b>ADX</b>趋势强度指标；常见阈值：&gt;25 强趋势，&lt;20 偏震荡。</div>
+                <div class="analysis-glossary-item"><b>趋势结构</b>基于均线关系判断 up/down/side。</div>
+                <div class="analysis-glossary-item"><b>评级A/B/C</b>A信号更一致，B中等，C分歧较大。</div>
+                <div class="analysis-glossary-item"><b>跨所共振</b>Binance/Bybit/OKX 的方向一致性与价差离散度。</div>
+              </div>
+            </div>
+            <div class="analysis-glossary-note">说明：APP里的部分“资金流向分档”属于私有统计口径，公开 API 不可完全复刻。</div>
+          </details>
+          <div id="analysisResult" class="analysis-result muted">等待分析...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card market-only">
+      <div class="stats">
+        <div class="stat">
+          <div class="k">USDT 现货条目</div>
+          <div class="v" id="spotCount">0</div>
+        </div>
+        <div class="stat">
+          <div class="k">USDT 合约条目</div>
+          <div class="v" id="futuresCount">0</div>
+        </div>
+        <div class="stat">
+          <div class="k">可对冲套利条目（现货+合约）</div>
+          <div class="v" id="arbCount">0</div>
+        </div>
+        <div class="stat">
+          <div class="k">10,000U 最高净收益/小时</div>
+          <div class="v" id="bestHourlyPnl">--</div>
+        </div>
+        <div class="stat">
+          <div class="k">最后更新时间</div>
+          <div class="v" id="lastUpdate">--</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid market-only">
+      <div class="card">
+        <h3 class="section-title">现货 USDT（24h 成交额降序）</h3>
+        <p class="sub-note">满足“现货从高到底”</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>交易对</th>
+                <th>最新价</th>
+                <th>24h涨跌%</th>
+                <th>24h成交额(USDT)</th>
+              </tr>
+            </thead>
+            <tbody id="spotBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="section-title">合约 USDT（24h 成交额降序）</h3>
+      <p class="sub-note">满足“合约从高到底”，并增加资金费率与资金周期</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>交易对</th>
+                <th>最新价</th>
+                <th>24h涨跌%</th>
+                <th>24h成交额(USDT)</th>
+                <th>资金费率(每期)</th>
+                <th>资金周期(h)</th>
+              </tr>
+            </thead>
+            <tbody id="futuresBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card market-only">
+      <h3 class="section-title">套利扫描（中性对冲）</h3>
+      <p class="sub-note">
+        10,000U每小时毛收益按真实资金周期估算：`10000 * |Funding(每期)| / 周期小时`，未扣手续费、滑点、借币利率。
+      </p>
+      <div class="table-wrap" style="max-height: 48vh;">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>交易对</th>
+              <th>现货价</th>
+              <th>合约价</th>
+              <th>基差%</th>
+              <th>资金费率(每期)</th>
+              <th>资金周期(h)</th>
+              <th>方向建议</th>
+              <th>毛收益/小时</th>
+              <th>净收益/小时</th>
+              <th>净收益/日</th>
+            </tr>
+          </thead>
+          <tbody id="arbBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card market-only">
+      <h3 class="section-title">跨所套利清单（Binance / Bybit / OKX）</h3>
+      <p class="sub-note">聚合三所公开行情与资金费数据，按“价差 + 资金费差”排序，优先展示可执行对冲组合。机会分 = 0.9×价差% + 3.6×|资金费差%| + 流动性加权(0~1.2)。</p>
+      <div class="table-wrap" style="max-height: 42vh;">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>交易对</th>
+              <th>买入交易所</th>
+              <th>买入价</th>
+              <th>卖出交易所</th>
+              <th>卖出价</th>
+              <th>买入资金费(周期)</th>
+              <th>卖出资金费(周期)</th>
+              <th>价差%</th>
+              <th>资金费差/小时%</th>
+              <th>可用交易所</th>
+              <th>策略建议</th>
+              <th>毛收益/小时</th>
+              <th>净收益/小时</th>
+              <th>净收益/日</th>
+              <th>机会分</th>
+            </tr>
+          </thead>
+          <tbody id="crossArbBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SPOT_BASES = [
+      "https://api.binance.com",
+      "https://api-gcp.binance.com",
+      "https://api1.binance.com",
+      "https://api2.binance.com",
+      "https://api3.binance.com",
+      "https://api4.binance.com",
+      "https://data-api.binance.vision"
+    ];
+    const FUTURES_BASES = [
+      "https://fapi.binance.com",
+      "https://fapi1.binance.com",
+      "https://fapi2.binance.com",
+      "https://fapi3.binance.com",
+      "https://fapi4.binance.com"
+    ];
+    const SPOT_24H_PATH = "/api/v3/ticker/24hr";
+    const FUTURES_24H_PATH = "/fapi/v1/ticker/24hr";
+    const PREMIUM_PATH = "/fapi/v1/premiumIndex";
+    const FUNDING_INFO_PATH = "/fapi/v1/fundingInfo";
+    const OI_HIST_PATH = "/futures/data/openInterestHist";
+    const TOP_LS_PATH = "/futures/data/topLongShortPositionRatio";
+    const TAKER_LS_PATH = "/futures/data/takerlongshortRatio";
+    const KLINE_PATH = "/api/v3/klines";
+    const DEPTH_PATH = "/api/v3/depth";
+    const FUTURES_KLINE_PATH = "/fapi/v1/klines";
+    const FUTURES_DEPTH_PATH = "/fapi/v1/depth";
+    const BYBIT_BASES = ["https://api.bybit.com"];
+    const BYBIT_LINEAR_TICKERS_PATH = "/v5/market/tickers?category=linear";
+    const OKX_BASES = ["https://www.okx.com"];
+    const OKX_SWAP_TICKERS_PATH = "/api/v5/market/tickers?instType=SWAP";
+    const OKX_FUNDING_RATE_PATH = "/api/v5/public/funding-rate";
+    const OKX_FUNDING_MAX_SYMBOLS = 60;
+    const OKX_FUNDING_CACHE_TTL_MS = 10 * 60 * 1000;
+    const OKX_FUNDING_BACKGROUND_BATCH = 40;
+    const QUOTE_ASSET = "USDT";
+    const NOTIONAL_USDT = 10000;
+    const VIEW_STORAGE_KEY = "bn_dashboard_active_view";
+
+    const els = {
+      marketPageBtn: document.getElementById("marketPageBtn"),
+      analysisPageBtn: document.getElementById("analysisPageBtn"),
+      refreshBtn: document.getElementById("refreshBtn"),
+      intervalInput: document.getElementById("intervalInput"),
+      toggleAutoBtn: document.getElementById("toggleAutoBtn"),
+      searchInput: document.getElementById("searchInput"),
+      status: document.getElementById("status"),
+      sourceHealth: document.getElementById("sourceHealth"),
+      spotCount: document.getElementById("spotCount"),
+      futuresCount: document.getElementById("futuresCount"),
+      arbCount: document.getElementById("arbCount"),
+      bestHourlyPnl: document.getElementById("bestHourlyPnl"),
+      lastUpdate: document.getElementById("lastUpdate"),
+      spotBody: document.getElementById("spotBody"),
+      futuresBody: document.getElementById("futuresBody"),
+      arbBody: document.getElementById("arbBody"),
+      crossArbBody: document.getElementById("crossArbBody"),
+      analysisModeSelect: document.getElementById("analysisModeSelect"),
+      analysisSymbolSelect: document.getElementById("analysisSymbolSelect"),
+      analysisSortSelect: document.getElementById("analysisSortSelect"),
+      analysisTopNInput: document.getElementById("analysisTopNInput"),
+      analysisAlignOnlyChk: document.getElementById("analysisAlignOnlyChk"),
+      analysisLongBiasFilter: document.getElementById("analysisLongBiasFilter"),
+      feeRateInput: document.getElementById("feeRateInput"),
+      borrowAprInput: document.getElementById("borrowAprInput"),
+      holdHoursInput: document.getElementById("holdHoursInput"),
+      runAnalysisBtn: document.getElementById("runAnalysisBtn"),
+      downloadManualBtn: document.getElementById("downloadManualBtn"),
+      downloadAutoBtn: document.getElementById("downloadAutoBtn"),
+      analysisResult: document.getElementById("analysisResult")
+    };
+
+    let autoTimer = null;
+    let spotRows = [];
+    let futuresRows = [];
+    let arbRows = [];
+    let bybitSwapRows = [];
+    let okxSwapRows = [];
+    let crossExchangeArbRows = [];
+    let okxFundingCache = new Map();
+    let analysisCache = new Map();
+    let unsupportedFuturesDepthSymbols = new Set();
+    let lastManualAnalysis = null;
+    let lastAutoAnalysis = { longList: [], shortList: [], neutralList: [], generatedAt: null };
+    let sourceState = {
+      binance: { ok: false, count: 0, note: "未拉取" },
+      bybit: { ok: false, count: 0, note: "未拉取" },
+      okx: { ok: false, count: 0, note: "未拉取" }
+    };
+    let manualAnalyzeTimer = null;
+
+    const num = (v) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    };
+
+    const fmt = (v, d = 4) => {
+      if (v === null || v === undefined || Number.isNaN(v)) return "--";
+      const n = Number(v);
+      if (!Number.isFinite(n)) return "--";
+      return n.toLocaleString(undefined, { maximumFractionDigits: d });
+    };
+
+    const fmtPriceSmart = (v) => {
+      if (v === null || v === undefined || Number.isNaN(v)) return "--";
+      const n = Number(v);
+      if (!Number.isFinite(n)) return "--";
+      const x = Math.abs(n);
+      let d = 3;
+      if (x >= 1000) d = 1;
+      else if (x >= 100) d = 2;
+      else if (x >= 1) d = 3;
+      else if (x >= 0.1) d = 4;
+      else if (x >= 0.01) d = 5;
+      else if (x >= 0.001) d = 6;
+      else d = 8;
+      return n.toLocaleString(undefined, { maximumFractionDigits: d });
+    };
+
+    const pct = (v, d = 3) => {
+      if (v === null || v === undefined || Number.isNaN(v)) return "<span class='muted'>--</span>";
+      const n = Number(v);
+      const cls = n > 0 ? "pos" : n < 0 ? "neg" : "";
+      return `<span class="${cls}">${n.toFixed(d)}%</span>`;
+    };
+
+    function isLikelyCorsOrNetworkError(err) {
+      const msg = String(err?.message || err || "");
+      return msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("CORS");
+    }
+
+    async function fetchJsonWithFallback(bases, path, options = {}) {
+      const maxAttempts = Math.max(1, options.maxAttempts || bases.length);
+      let lastErr = null;
+      const candidates = bases.slice(0, maxAttempts);
+      for (const base of candidates) {
+        const url = `${base}${path}`;
+        try {
+          const resp = await fetch(url, { cache: "no-store" });
+          if (!resp.ok) {
+            const e = new Error(`HTTP ${resp.status}`);
+            e.status = resp.status;
+            // 451 通常是区域法务限制，继续切换同类节点大概率无意义。
+            if (resp.status === 451 || resp.status === 400 || resp.status === 404) e.noRetry = true;
+            throw e;
+          }
+          const data = await resp.json();
+          return { data, url };
+        } catch (err) {
+          lastErr = err;
+          if (err?.noRetry || err?.status === 451) break;
+        }
+      }
+      const finalErr = new Error(`所有节点请求失败: ${path}. 最后错误: ${lastErr?.message || lastErr}`);
+      finalErr.cause = lastErr;
+      finalErr.status = lastErr?.status;
+      throw finalErr;
+    }
+
+    async function fetchOptionalJsonWithTimeout(bases, path, timeoutMs = 4500) {
+      const timer = new Promise((resolve) => {
+        setTimeout(() => resolve(null), timeoutMs);
+      });
+      try {
+        const res = await Promise.race([
+          fetchJsonWithFallback(bases, path, { maxAttempts: 1 }),
+          timer
+        ]);
+        return res;
+      } catch {
+        return null;
+      }
+    }
+
+    function buildPath(path, params = {}) {
+      const sp = new URLSearchParams();
+      for (const [k, v] of Object.entries(params)) {
+        if (v !== null && v !== undefined && v !== "") sp.set(k, v);
+      }
+      const q = sp.toString();
+      return q ? `${path}?${q}` : path;
+    }
+
+    function okxInstIdToSymbol(instId) {
+      const m = /^([A-Z0-9]+)-USDT-SWAP$/i.exec(String(instId || ""));
+      return m ? `${m[1].toUpperCase()}USDT` : null;
+    }
+
+    async function fetchOkxFundingSnapshot(instIds, maxSymbols = OKX_FUNDING_MAX_SYMBOLS) {
+      const picked = Array.from(new Set((instIds || []).slice(0, maxSymbols).filter(Boolean)));
+      const out = new Map();
+      if (!picked.length) return out;
+
+      const now = Date.now();
+      const pending = [];
+      for (const instId of picked) {
+        const cached = okxFundingCache.get(instId);
+        if (cached && (now - cached.ts) < OKX_FUNDING_CACHE_TTL_MS) {
+          const payload = {
+            fundingPct: cached.fundingPct,
+            fundingIntervalHours: cached.fundingIntervalHours
+          };
+          out.set(instId, payload);
+          const s = okxInstIdToSymbol(instId);
+          if (s) out.set(s, payload);
+        } else {
+          pending.push(instId);
+        }
+      }
+      if (!pending.length) return out;
+
+      const batchSize = 6;
+      for (let i = 0; i < pending.length; i += batchSize) {
+        const batch = pending.slice(i, i + batchSize);
+        const settled = await Promise.allSettled(
+          batch.map((instId) =>
+            fetchJsonWithFallback(
+              OKX_BASES,
+              buildPath(OKX_FUNDING_RATE_PATH, { instId }),
+              { maxAttempts: 1 }
+            )
+          )
+        );
+        for (let j = 0; j < settled.length; j += 1) {
+          if (settled[j].status !== "fulfilled") continue;
+          const payload = settled[j].value?.data?.data;
+          const data = Array.isArray(payload) ? payload[0] : payload;
+          if (!data) continue;
+          const instId = String(data.instId || batch[j] || "");
+          const symbol = okxInstIdToSymbol(instId);
+          if (!symbol) continue;
+          const fundingPct = num(data.fundingRate) !== null ? num(data.fundingRate) * 100 : null;
+          const ft = num(data.fundingTime);
+          const nft = num(data.nextFundingTime);
+          const intervalHours = (ft !== null && nft !== null && nft > ft)
+            ? (nft - ft) / 3600000
+            : null;
+          const normalized = {
+            fundingPct,
+            fundingIntervalHours: intervalHours && intervalHours > 0 ? intervalHours : null
+          };
+          okxFundingCache.set(instId, {
+            ...normalized,
+            ts: Date.now()
+          });
+          // instId 优先，symbol 兜底，避免 key 口径不一致导致回填丢失
+          out.set(instId, normalized);
+          out.set(symbol, normalized);
+        }
+      }
+      return out;
+    }
+
+    function sma(arr, n) {
+      if (arr.length < n) return null;
+      let s = 0;
+      for (let i = arr.length - n; i < arr.length; i += 1) s += arr[i];
+      return s / n;
+    }
+
+    function rsi(closes, n = 14) {
+      if (closes.length < n + 1) return null;
+      let gain = 0;
+      let loss = 0;
+      for (let i = closes.length - n; i < closes.length; i += 1) {
+        const d = closes[i] - closes[i - 1];
+        if (d >= 0) gain += d;
+        else loss -= d;
+      }
+      const avgGain = gain / n;
+      const avgLoss = loss / n;
+      if (avgLoss === 0) return 100;
+      const rs = avgGain / avgLoss;
+      return 100 - 100 / (1 + rs);
+    }
+
+    function atr(highs, lows, closes, n = 14) {
+      if (closes.length < n + 1) return null;
+      let sumTr = 0;
+      for (let i = closes.length - n; i < closes.length; i += 1) {
+        const tr = Math.max(
+          highs[i] - lows[i],
+          Math.abs(highs[i] - closes[i - 1]),
+          Math.abs(lows[i] - closes[i - 1])
+        );
+        sumTr += tr;
+      }
+      return sumTr / n;
+    }
+
+    function bollinger(closes, n = 20, k = 2) {
+      if (closes.length < n) return null;
+      const seg = closes.slice(-n);
+      const mean = seg.reduce((a, b) => a + b, 0) / n;
+      const variance = seg.reduce((a, b) => a + (b - mean) * (b - mean), 0) / n;
+      const std = Math.sqrt(variance);
+      const upper = mean + k * std;
+      const lower = mean - k * std;
+      const last = closes[closes.length - 1];
+      const band = upper - lower;
+      const pos = band > 0 ? (last - lower) / band : null;
+      return {
+        middle: mean,
+        upper,
+        lower,
+        pos,
+        widthPct: mean ? (band / mean) * 100 : null
+      };
+    }
+
+    function rollingVwap(closes, volumes, n = 48) {
+      if (closes.length < n || volumes.length < n) return null;
+      const len = Math.min(closes.length, volumes.length);
+      let sumPv = 0;
+      let sumV = 0;
+      for (let i = len - n; i < len; i += 1) {
+        const p = closes[i];
+        const v = volumes[i];
+        if (!Number.isFinite(p) || !Number.isFinite(v) || v <= 0) continue;
+        sumPv += p * v;
+        sumV += v;
+      }
+      if (!sumV) return null;
+      return sumPv / sumV;
+    }
+
+    function emaSeries(arr, n) {
+      if (!arr.length || n <= 0) return [];
+      const alpha = 2 / (n + 1);
+      const out = [];
+      let prev = arr[0];
+      out.push(prev);
+      for (let i = 1; i < arr.length; i += 1) {
+        prev = (arr[i] - prev) * alpha + prev;
+        out.push(prev);
+      }
+      return out;
+    }
+
+    function macd(closes, fast = 12, slow = 26, signal = 9) {
+      if (closes.length < slow + signal + 5) return null;
+      const fastEma = emaSeries(closes, fast);
+      const slowEma = emaSeries(closes, slow);
+      const macdLine = closes.map((_, i) => fastEma[i] - slowEma[i]);
+      const signalLine = emaSeries(macdLine, signal);
+      const hist = macdLine.map((v, i) => v - signalLine[i]);
+      const i = hist.length - 1;
+      return {
+        macd: macdLine[i],
+        signal: signalLine[i],
+        hist: hist[i],
+        prevHist: i > 0 ? hist[i - 1] : hist[i]
+      };
+    }
+
+    function adx(highs, lows, closes, n = 14) {
+      if (highs.length < n * 2 + 1 || lows.length < n * 2 + 1 || closes.length < n * 2 + 1) return null;
+
+      const trArr = [];
+      const plusDmArr = [];
+      const minusDmArr = [];
+      for (let i = 1; i < closes.length; i += 1) {
+        const upMove = highs[i] - highs[i - 1];
+        const downMove = lows[i - 1] - lows[i];
+        const plusDm = (upMove > downMove && upMove > 0) ? upMove : 0;
+        const minusDm = (downMove > upMove && downMove > 0) ? downMove : 0;
+        const tr = Math.max(
+          highs[i] - lows[i],
+          Math.abs(highs[i] - closes[i - 1]),
+          Math.abs(lows[i] - closes[i - 1])
+        );
+        trArr.push(tr);
+        plusDmArr.push(plusDm);
+        minusDmArr.push(minusDm);
+      }
+
+      let trN = trArr.slice(0, n).reduce((a, b) => a + b, 0);
+      let plusDmN = plusDmArr.slice(0, n).reduce((a, b) => a + b, 0);
+      let minusDmN = minusDmArr.slice(0, n).reduce((a, b) => a + b, 0);
+      if (!trN) return null;
+
+      const dxVals = [];
+      let plusDi = 100 * plusDmN / trN;
+      let minusDi = 100 * minusDmN / trN;
+      dxVals.push((plusDi + minusDi) ? (100 * Math.abs(plusDi - minusDi) / (plusDi + minusDi)) : 0);
+
+      for (let i = n; i < trArr.length; i += 1) {
+        trN = trN - (trN / n) + trArr[i];
+        plusDmN = plusDmN - (plusDmN / n) + plusDmArr[i];
+        minusDmN = minusDmN - (minusDmN / n) + minusDmArr[i];
+        plusDi = trN ? (100 * plusDmN / trN) : 0;
+        minusDi = trN ? (100 * minusDmN / trN) : 0;
+        dxVals.push((plusDi + minusDi) ? (100 * Math.abs(plusDi - minusDi) / (plusDi + minusDi)) : 0);
+      }
+
+      if (dxVals.length < n) return null;
+      let adxVal = dxVals.slice(0, n).reduce((a, b) => a + b, 0) / n;
+      for (let i = n; i < dxVals.length; i += 1) {
+        adxVal = ((adxVal * (n - 1)) + dxVals[i]) / n;
+      }
+
+      return {
+        adx: adxVal,
+        plusDi,
+        minusDi
+      };
+    }
+
+    function hhi(arr) {
+      const sum = arr.reduce((x, y) => x + y, 0);
+      if (!sum) return null;
+      return arr.reduce((acc, v) => acc + (v / sum) * (v / sum), 0);
+    }
+
+    function trimmedExtrema(arr, trimRatio = 0.08) {
+      const nums = (arr || []).filter((x) => Number.isFinite(x));
+      if (!nums.length) return { min: null, max: null };
+      const sorted = nums.slice().sort((a, b) => a - b);
+      const maxTrim = Math.max(0, Math.floor(sorted.length * trimRatio));
+      const trim = Math.min(2, maxTrim);
+      const body = sorted.slice(trim, sorted.length - trim);
+      const finalArr = body.length ? body : sorted;
+      return {
+        min: finalArr[0],
+        max: finalArr[finalArr.length - 1]
+      };
+    }
+
+    function robustSupportResistance(highs, lows, closes, lookback = 30) {
+      const hs = (highs || []).slice(-lookback);
+      const ls = (lows || []).slice(-lookback);
+      const cs = (closes || []).slice(-lookback);
+      const hEx = trimmedExtrema(hs, 0.08);
+      const lEx = trimmedExtrema(ls, 0.08);
+      const cEx = trimmedExtrema(cs, 0);
+      if (hEx.max === null || lEx.min === null || cEx.min === null || cEx.max === null) {
+        return {
+          support: Math.min(...ls),
+          resistance: Math.max(...hs)
+        };
+      }
+      const support = lEx.min * 0.4 + cEx.min * 0.6;
+      const resistance = hEx.max * 0.4 + cEx.max * 0.6;
+      return { support, resistance };
+    }
+
+    function toBias(score) {
+      if (score >= 3.3) return "偏多（强）";
+      if (score >= 1.5) return "偏多（中）";
+      if (score <= -3.3) return "偏空（强）";
+      if (score <= -1.5) return "偏空（中）";
+      return "震荡/观望";
+    }
+
+    function getSignalGrade(score, riskCount) {
+      if (score >= 3.5 && riskCount <= 1) return "A";
+      if (score >= 1.5 && riskCount <= 2) return "B";
+      return "C";
+    }
+
+    function gradeClass(grade) {
+      if (grade === "A") return "grade-a";
+      if (grade === "B") return "grade-b";
+      return "grade-c";
+    }
+
+    function deriveRiskTags(x) {
+      const tags = [];
+      if ((x.topLsLast !== null && (x.topLsLast > 1.8 || x.topLsLast < 0.75)) || Math.abs(x.imbalance || 0) > 0.35) {
+        tags.push("拥挤度高");
+      }
+      if (x.concentrationScore !== null && x.concentrationScore > 0.12) {
+        tags.push("盘口集中度高");
+      }
+      if ((x.oiChange !== null && Math.abs(x.oiChange) > 12) || (x.fundingPct !== null && Math.abs(x.fundingPct) > 0.03)) {
+        tags.push("杠杆风险");
+      }
+      if ((x.atr14 && x.close && (x.atr14 / x.close) > 0.03) || (x.rsi14 !== null && (x.rsi14 > 72 || x.rsi14 < 28))) {
+        tags.push("波动过大");
+      }
+      if (x.adx14 !== null && x.adx14 < 18) {
+        tags.push("趋势不明");
+      }
+      if (x.crossDispersionPct !== null && x.crossDispersionPct > 0.8) {
+        tags.push("跨所价差大");
+      }
+      if (x.bbPos !== null && (x.bbPos > 0.95 || x.bbPos < 0.05)) {
+        tags.push("波段极值区");
+      }
+      if (x.crowdingRegime === "long_crowded") {
+        tags.push("多头拥挤");
+      } else if (x.crowdingRegime === "short_crowded") {
+        tags.push("空头拥挤");
+      }
+      return tags;
+    }
+
+    function concentrationLabel(score) {
+      if (score === null || score === undefined) return "未知";
+      const idx = Math.min(1, score * 10);
+      if (idx >= 0.7) return "高";
+      if (idx >= 0.4) return "中";
+      return "低";
+    }
+
+    function concentrationIndex(score) {
+      if (score === null || score === undefined) return null;
+      return Math.min(1, score * 10);
+    }
+
+    function getArbNetPnl(row) {
+      const feeRatePct = Math.max(0, num(els.feeRateInput.value) || 0);
+      const borrowAprPct = Math.max(0, num(els.borrowAprInput.value) || 0);
+      const holdHours = Math.max(1, num(els.holdHoursInput.value) || 24);
+      const grossHourly = row.hourlyGross || 0;
+      const feeRate = feeRatePct / 100;
+      const borrowApr = borrowAprPct / 100;
+      const roundTripFee = NOTIONAL_USDT * feeRate * 4;
+      const feeHourly = roundTripFee / holdHours;
+      const borrowHourly = row.fundingPct < 0 ? NOTIONAL_USDT * borrowApr / 365 / 24 : 0;
+      const netHourly = grossHourly - feeHourly - borrowHourly;
+      return {
+        grossHourly,
+        feeHourly,
+        borrowHourly,
+        netHourly,
+        netDaily: netHourly * 24
+      };
+    }
+
+    function getCrossArbNetPnl(row) {
+      const feeRatePct = Math.max(0, num(els.feeRateInput.value) || 0);
+      const holdHours = Math.max(1, num(els.holdHoursInput.value) || 24);
+      const spreadCaptureHourly = NOTIONAL_USDT * Math.abs(row.spreadPct || 0) / 100 / holdHours;
+      const fundingCaptureHourly = row.fundingEdgeHourlyPct === null || row.fundingEdgeHourlyPct === undefined
+        ? 0
+        : (NOTIONAL_USDT * row.fundingEdgeHourlyPct / 100);
+      const grossHourly = spreadCaptureHourly + fundingCaptureHourly;
+      const feeRate = feeRatePct / 100;
+      const roundTripFee = NOTIONAL_USDT * feeRate * 4;
+      const feeHourly = roundTripFee / holdHours;
+      const netHourly = grossHourly - feeHourly;
+      return {
+        grossHourly,
+        feeHourly,
+        netHourly,
+        netDaily: netHourly * 24
+      };
+    }
+
+    function renderSourceHealth() {
+      if (!els.sourceHealth) return;
+      const mk = (label, x) => {
+        const cls = x.ok ? "ok" : (x.count > 0 ? "warn" : "err");
+        return `<span class="source-item"><span class="source-dot ${cls}"></span>${label} ${x.count} (${x.note})</span>`;
+      };
+      els.sourceHealth.innerHTML = [
+        mk("Binance", sourceState.binance),
+        mk("Bybit", sourceState.bybit),
+        mk("OKX", sourceState.okx)
+      ].join("");
+    }
+
+    function buildNarrative(result, includeEvidence = false) {
+      const lines = [];
+      const concLabel = concentrationLabel(result.concentrationScore);
+      const annotate = (text, evidence) => includeEvidence ? `${text}（依据：${evidence}）` : text;
+      const scoreTxt = Number.isFinite(result.score) ? fmt(result.score, 2) : "--";
+      const fundingTxt = result.fundingPct === null ? "--" : `${fmt(result.fundingPct, 4)}%`;
+      const fundingCycle = Number.isFinite(result.fundingIntervalHours) ? `${fmt(result.fundingIntervalHours, 0)}h` : "--";
+      const oiTxt = result.oiChange === null ? "--" : `${fmt(result.oiChange, 2)}%`;
+      const pxChgTxt = result.closeChangePct === null || result.closeChangePct === undefined ? "--" : `${fmt(result.closeChangePct, 2)}%`;
+      const takerTxt = result.takerLast === null ? "--" : fmt(result.takerLast, 4);
+      const takerMeanTxt = result.takerMean === null ? "--" : fmt(result.takerMean, 4);
+      const macdTxt = result.macdHist === null ? "--" : fmt(result.macdHist, 6);
+      const adxTxt = result.adx14 === null ? "--" : fmt(result.adx14, 2);
+      const imbalancePctTxt = fmt((result.imbalance || 0) * 100, 2);
+      const depthBandTxt = result.depthBandAbs === null || result.depthBandAbs === undefined ? "--" : fmtPriceSmart(result.depthBandAbs);
+      const concIdx = concentrationIndex(result.concentrationScore);
+      const concTxt = concIdx === null ? "--" : fmt(concIdx, 4);
+
+      lines.push(annotate(
+        `先看结论：${result.bias}，当前评级 ${result.grade}`,
+        `综合分=${scoreTxt}，数据范围=${result.marketScope}`
+      ));
+
+      if (result.fundingPct !== null) {
+        if (result.fundingPct < 0) {
+          lines.push(annotate("资金费率为负，空头在付费，短线更容易出现反弹或空头回补", `Funding=${fundingTxt}/${fundingCycle}`));
+        } else if (result.fundingPct > 0.02) {
+          lines.push(annotate("资金费率偏高，多头拥挤，继续追高要更谨慎", `Funding=${fundingTxt}/${fundingCycle}`));
+        } else {
+          lines.push(annotate("资金费率中性，衍生品端暂未出现极端拥挤", `Funding=${fundingTxt}/${fundingCycle}`));
+        }
+      } else {
+        lines.push(annotate("资金费率暂不可用，当前结论更依赖价格结构和盘口信号", `Funding=${fundingTxt}`));
+      }
+
+      if (result.oiChange !== null) {
+        if (Math.abs(result.oiChange) > 12) {
+          lines.push(annotate("持仓量变化较大，杠杆资金进出快，后续波动通常会更大", `OI变化=${oiTxt}，近24根价格变化=${pxChgTxt}`));
+        } else {
+          lines.push(annotate("持仓量变化在正常范围，结构相对更稳", `OI变化=${oiTxt}，近24根价格变化=${pxChgTxt}`));
+        }
+      }
+      if (result.takerLast !== null && result.takerMean !== null) {
+        if (result.takerLast > result.takerMean * 1.08) {
+          lines.push(annotate("主动买盘高于最近均值，买方当前更主动", `Taker=${takerTxt}，均值=${takerMeanTxt}`));
+        } else if (result.takerLast < result.takerMean * 0.92) {
+          lines.push(annotate("主动卖盘更强，短线压力偏大", `Taker=${takerTxt}，均值=${takerMeanTxt}`));
+        }
+      }
+      if (result.macdHist !== null) {
+        if (result.macdHist > 0) {
+          lines.push(annotate("MACD柱体在零轴上方，动能偏多", `MACD柱体=${macdTxt}`));
+        } else if (result.macdHist < 0) {
+          lines.push(annotate("MACD柱体在零轴下方，动能偏空", `MACD柱体=${macdTxt}`));
+        }
+      }
+      if (result.adx14 !== null) {
+        if (result.adx14 >= 25) {
+          lines.push(annotate("ADX显示趋势强，顺势信号可信度更高", `ADX=${adxTxt}`));
+        } else if (result.adx14 < 20) {
+          lines.push(annotate("ADX较低，当前更偏震荡，追单胜率会下降", `ADX=${adxTxt}`));
+        }
+      }
+      if (result.crowdingRegime === "long_crowded") {
+        lines.push(annotate("Funding、基差和OI共同指向多头拥挤，需防多头挤兑", `拥挤度=${result.crowdingRegime}，Funding=${fundingTxt}，OI变化=${oiTxt}`));
+      }
+      if (result.crowdingRegime === "short_crowded") {
+        lines.push(annotate("Funding、基差和OI共同指向空头拥挤，需防空头回补", `拥挤度=${result.crowdingRegime}，Funding=${fundingTxt}，OI变化=${oiTxt}`));
+      }
+
+      if (result.imbalance > 0.08) {
+        lines.push(annotate("盘口买盘厚于卖盘，下方承接不错", `盘口失衡=${imbalancePctTxt}%，自适应窗口=${depthBandTxt}`));
+      } else if (result.imbalance < -0.08) {
+        lines.push(annotate("盘口卖盘偏厚，上方抛压更重", `盘口失衡=${imbalancePctTxt}%，自适应窗口=${depthBandTxt}`));
+      } else {
+        lines.push(annotate("盘口买卖相对均衡，暂时没有一边倒", `盘口失衡=${imbalancePctTxt}%，自适应窗口=${depthBandTxt}`));
+      }
+      lines.push(annotate(`盘口集中度为${concLabel}，集中度越高越容易被大单短时影响价格`, `集中度指数=${concTxt}`));
+
+      const action = result.plan.side === "多"
+        ? "综合下来更偏向回调做多，建议分批进场，不要一次性满仓。"
+        : (result.plan.side === "空"
+          ? "综合下来更偏向反弹做空，优先等反弹到计划区间再执行。"
+          : "综合下来暂时没有强单边优势，更建议轻仓观察，等信号更一致再加仓。");
+
+      lines.push(annotate(
+        action.replace(/。$/, ""),
+        `方向=${result.plan.side}，入场=${fmtPriceSmart(result.plan.entry[0])}-${fmtPriceSmart(result.plan.entry[1])}，止损=${fmtPriceSmart(result.plan.sl)}`
+      ));
+
+      return lines.join("。");
+    }
+
+    function getPriorityPoints(result) {
+      const points = [];
+      if (result.score >= 3.5) points.push({ tone: "pos", text: "信号一致性高，优先按计划区间分批执行。" });
+      else if (result.score <= -3.5) points.push({ tone: "neg", text: "空头信号集中，优先等待反弹后的执行点位。" });
+      else points.push({ tone: "warn", text: "信号有分歧，建议轻仓试单，避免一次性重仓。" });
+
+      if (result.fundingPct !== null) {
+        if (result.fundingPct < 0) points.push({ tone: "pos", text: "资金费率为负，空头付费，短线反弹概率抬升。" });
+        else if (result.fundingPct > 0.02) points.push({ tone: "warn", text: "资金费率偏高，多头拥挤，追涨风险增加。" });
+        else points.push({ tone: "muted", text: "资金费率中性，衍生品拥挤度未见极端。" });
+      }
+
+      if (result.imbalance > 0.08) points.push({ tone: "pos", text: "盘口买盘更厚，短线承接相对更强。" });
+      else if (result.imbalance < -0.08) points.push({ tone: "neg", text: "盘口卖盘更厚，上方抛压偏重。" });
+      if (result.adx14 !== null && result.adx14 >= 25) {
+        points.push({ tone: "pos", text: "ADX>25，趋势强，顺势单通常更稳定。" });
+      } else if (result.adx14 !== null && result.adx14 < 20) {
+        points.push({ tone: "warn", text: "ADX<20，趋势偏弱，震荡假突破概率更高。" });
+      }
+      if (result.crowdingRegime === "long_crowded") {
+        points.push({ tone: "warn", text: "多头拥挤：Funding+基差+OI 同向偏热，注意回撤。" });
+      } else if (result.crowdingRegime === "short_crowded") {
+        points.push({ tone: "pos", text: "空头拥挤：若出现反抽，容易触发空头回补。" });
+      }
+      if (result.macdHist !== null && result.macdHist < 0 && result.macdHistPrev !== null && result.macdHist > result.macdHistPrev) {
+        points.push({ tone: "warn", text: "MACD空头动能在收敛，注意反抽/反转风险。" });
+      }
+
+      if (result.oiChange !== null && Math.abs(result.oiChange) > 12) {
+        points.push({ tone: "warn", text: "OI波动偏大，杠杆资金换手快，波动风险上升。" });
+      }
+      if (result.concentrationScore !== null && result.concentrationScore > 0.12) {
+        points.push({ tone: "warn", text: "盘口集中度高，易被大单短时扰动。" });
+      }
+      return points.slice(0, 4);
+    }
+
+    function explainTrendRsiAtr(result) {
+      const trendText = result.trend === "up" ? "趋势偏多" : (result.trend === "down" ? "趋势偏空" : "趋势震荡");
+      let rsiText = "RSI暂无";
+      if (result.rsi14 !== null) {
+        if (result.rsi14 >= 70) rsiText = "RSI偏高，短线有回落风险";
+        else if (result.rsi14 <= 30) rsiText = "RSI偏低，短线有反弹概率";
+        else if (result.rsi14 >= 40 && result.rsi14 <= 60) rsiText = "RSI中性，方向不极端";
+        else if (result.rsi14 > 60) rsiText = "RSI偏强，多头略占优";
+        else rsiText = "RSI偏弱，空头略占优";
+      }
+      let atrText = "波动未知";
+      if (result.atr14 !== null && result.close) {
+        const atrPct = result.atr14 / result.close * 100;
+        if (atrPct >= 3) atrText = "波动较大，仓位宜小";
+        else if (atrPct >= 1.5) atrText = "波动中等，注意止损";
+        else atrText = "波动较温和";
+      }
+      return `${trendText}；${rsiText}；${atrText}`;
+    }
+
+    function explainMacdAdx(result) {
+      let macdText = "MACD暂无";
+      if (result.macdHist !== null && result.macdHist !== undefined) {
+        if (result.macdHist > 0) {
+          macdText = (result.macdHistPrev !== null && result.macdHistPrev !== undefined && result.macdHist > result.macdHistPrev)
+            ? "MACD多头动能在增强"
+            : "MACD多头动能仍占优";
+        } else if (result.macdHist < 0) {
+          macdText = (result.macdHistPrev !== null && result.macdHistPrev !== undefined && result.macdHist > result.macdHistPrev)
+            ? "MACD空头动能在减弱"
+            : "MACD空头动能仍偏强";
+        } else {
+          macdText = "MACD接近零轴，动能中性";
+        }
+      }
+
+      let adxText = "ADX暂无";
+      if (result.adx14 !== null && result.adx14 !== undefined) {
+        if (result.adx14 >= 25) adxText = "ADX>25，趋势强，顺势信号更可信";
+        else if (result.adx14 >= 20) adxText = "ADX在20~25，趋势正在形成";
+        else adxText = "ADX<20，市场偏震荡";
+      }
+      return `${macdText}；${adxText}`;
+    }
+
+    function explainBollingerVwapCrowding(result) {
+      let bbText = "Bollinger暂无";
+      if (result.bbPos !== null && result.bbPos !== undefined) {
+        if (result.bbPos > 0.9) bbText = "价格靠近上轨，短线偏热";
+        else if (result.bbPos < 0.1) bbText = "价格靠近下轨，短线偏冷";
+        else bbText = "价格在布林中轨附近，位置中性";
+      }
+
+      let vwapText = "VWAP暂无";
+      if (result.vwapDevPct !== null && result.vwapDevPct !== undefined) {
+        if (result.vwapDevPct > 1) vwapText = "明显高于VWAP，短线有回归压力";
+        else if (result.vwapDevPct < -1) vwapText = "明显低于VWAP，短线有回归动能";
+        else vwapText = "与VWAP偏离不大，价格较均衡";
+      }
+
+      let crowdText = "拥挤度中性";
+      if (result.crowdingRegime === "long_crowded") crowdText = "多头拥挤（Funding+基差+OI同向偏热）";
+      else if (result.crowdingRegime === "short_crowded") crowdText = "空头拥挤（Funding+基差+OI同向偏热）";
+      return `${bbText}；${vwapText}；${crowdText}`;
+    }
+
+    function explainCrossVenue(result) {
+      if (result.crossVenueCount === null || result.crossVenueCount < 2) return "跨所数据不足，暂不参与共振判断";
+      const cons = result.crossConsensus === "up" ? "多所偏多共振" : (result.crossConsensus === "down" ? "多所偏空共振" : "多所方向分歧");
+      let disp = "价差正常";
+      if (result.crossDispersionPct !== null) {
+        if (result.crossDispersionPct > 0.8) disp = "跨所价差偏大，执行需注意滑点/转账成本";
+        else if (result.crossDispersionPct > 0.4) disp = "跨所价差中等，可关注收敛机会";
+      }
+      return `${cons}；${disp}`;
+    }
+
+    function explainFunding(result) {
+      if (result.fundingPct === null || result.fundingPct === undefined) return "资金费缺失，参考价值下降";
+      const f = result.fundingPct;
+      if (f >= 0.03) return "资金费偏高，多头拥挤，追多要谨慎";
+      if (f > 0) return "资金费为正，做多方在付费";
+      if (f <= -0.03) return "资金费偏低，空头拥挤，反弹概率提升";
+      if (f < 0) return "资金费为负，做空方在付费";
+      return "资金费接近0，情绪中性";
+    }
+
+    function explainOiTopLs(result) {
+      let oiText = "OI未知";
+      if (result.oiChange !== null && result.oiChange !== undefined) {
+        const oi = result.oiChange;
+        if (Math.abs(oi) >= 12) oiText = "OI变化大，杠杆资金活跃";
+        else if (oi > 0) oiText = "OI小幅增仓";
+        else if (oi < 0) oiText = "OI小幅减仓";
+        else oiText = "OI基本不变";
+      }
+      let lsText = "大户多空未知";
+      if (result.topLsLast !== null && result.topLsLast !== undefined) {
+        const ls = result.topLsLast;
+        if (ls > 1.8) lsText = "大户多头拥挤";
+        else if (ls < 0.75) lsText = "大户空头拥挤";
+        else lsText = "大户仓位相对均衡";
+      }
+      return `${oiText}；${lsText}`;
+    }
+
+    function explainOiBinding(result) {
+      let bindText = "价量绑定不足";
+      if (result.oiChange !== null && result.closeChangePct !== null && result.closeChangePct !== undefined) {
+        if (result.oiChange > 8 && result.closeChangePct > 2) bindText = "价升+OI增，偏多头建仓";
+        else if (result.oiChange > 8 && result.closeChangePct < -2) bindText = "价跌+OI增，偏空头建仓";
+        else if (result.oiChange < -8 && result.closeChangePct < -2) bindText = "价跌+OI减，偏多头踩踏后反抽";
+        else if (result.oiChange < -8 && result.closeChangePct > 2) bindText = "价升+OI减，偏空头回补后回落";
+      }
+      return bindText;
+    }
+
+    function explainTaker(result) {
+      if (result.takerLast === null || result.takerMean === null || result.takerMean === 0) return "主动买卖数据不足";
+      if (result.takerLast > result.takerMean * 1.08) return "主动买盘强于均值，买方更积极";
+      if (result.takerLast < result.takerMean * 0.92) return "主动卖盘强于均值，短线压力偏大";
+      return "主动买卖接近均值，短线情绪中性";
+    }
+
+    function explainBasisImbalance(result) {
+      const basis = result.basisPct;
+      const imbalance = (result.imbalance || 0) * 100;
+      let basisText = "基差未知";
+      if (basis !== null && basis !== undefined) {
+        if (basis > 1) basisText = "合约明显升水";
+        else if (basis > 0) basisText = "合约小幅升水";
+        else if (basis < -1) basisText = "合约明显贴水";
+        else if (basis < 0) basisText = "合约小幅贴水";
+        else basisText = "基差接近0";
+      }
+      let obText = "盘口均衡";
+      if (imbalance > 8) obText = "买盘更厚，下方承接较强";
+      else if (imbalance < -8) obText = "卖盘更厚，上方抛压偏重";
+      const bandText = result.depthBandAbs ? `盘口窗口±${fmtPriceSmart(result.depthBandAbs)}` : "盘口窗口默认";
+      return `${basisText}；${obText}；${bandText}`;
+    }
+
+    function explainConcentration(result) {
+      if (result.concentrationScore === null || result.concentrationScore === undefined) return "集中度缺失，需结合其他因子";
+      const idx = concentrationIndex(result.concentrationScore);
+      if (idx >= 0.7) return "集中度高，容易被大单快速扰动";
+      if (idx >= 0.4) return "集中度中等，注意异常放量";
+      return "集中度较低，盘口更分散";
+    }
+
+    function deriveLongTermView(ctx) {
+      let score = 0;
+      const reasons = [];
+      const trendSign = ctx.trend === "up" ? 1 : (ctx.trend === "down" ? -1 : 0);
+
+      if (Number.isFinite(ctx.sma50) && Number.isFinite(ctx.sma120)) {
+        if (ctx.sma50 > ctx.sma120) {
+          score += 1.0;
+          reasons.push("中期均线多头排列");
+        } else if (ctx.sma50 < ctx.sma120) {
+          score -= 1.0;
+          reasons.push("中期均线空头排列");
+        }
+      }
+      if (Number.isFinite(ctx.close) && Number.isFinite(ctx.sma120)) {
+        if (ctx.close > ctx.sma120) score += 0.8;
+        else if (ctx.close < ctx.sma120) score -= 0.8;
+      }
+      if (Number.isFinite(ctx.adx14) && ctx.adx14 >= 25 && trendSign !== 0) {
+        score += 0.6 * trendSign;
+        reasons.push("趋势强度支持延续");
+      }
+      if (Number.isFinite(ctx.closeChangePct)) {
+        if (ctx.closeChangePct >= 6) score += 0.35;
+        else if (ctx.closeChangePct <= -6) score -= 0.35;
+      }
+      if (ctx.crossConsensus === "up") score += 0.2;
+      else if (ctx.crossConsensus === "down") score -= 0.2;
+      if (Number.isFinite(ctx.crossDispersionPct) && ctx.crossDispersionPct > 1.2) score -= 0.2;
+
+      if (ctx.crowdingRegime === "long_crowded") {
+        score -= 0.3;
+        reasons.push("多头拥挤抑制追涨");
+      } else if (ctx.crowdingRegime === "short_crowded") {
+        score += 0.3;
+        reasons.push("空头拥挤有修复空间");
+      }
+      if (Number.isFinite(ctx.fundingPct)) {
+        if (ctx.fundingPct >= 0.04) score -= 0.25;
+        else if (ctx.fundingPct <= -0.04) score += 0.25;
+      }
+
+      let bias = "中性震荡";
+      if (score >= 1.6) bias = "长线偏多";
+      else if (score >= 0.6) bias = "中性偏多";
+      else if (score <= -1.6) bias = "长线偏空";
+      else if (score <= -0.6) bias = "中性偏空";
+
+      const confidence = Math.min(100, Math.max(30, Math.round(45 + Math.abs(score) * 16 + (Number.isFinite(ctx.adx14) ? Math.min(15, Math.max(0, ctx.adx14 - 18)) : 0))));
+      let positioning = "仓位中性，等待结构确认后再放大。";
+      if (bias.includes("偏多")) positioning = "回踩分批布局为主，突破后可保留部分仓位做趋势。";
+      if (bias.includes("偏空")) positioning = "反弹分批减仓/对冲优先，避免在弱势中逆势重仓。";
+
+      const vol = Number.isFinite(ctx.atr14) ? ctx.atr14 : (Number.isFinite(ctx.close) ? ctx.close * 0.02 : 0);
+      const support = Number.isFinite(ctx.support) ? ctx.support : ctx.close;
+      const resistance = Number.isFinite(ctx.resistance) ? ctx.resistance : ctx.close;
+      const base = Number.isFinite(ctx.close) ? ctx.close : support;
+      const mkRange = (a, b) => [Math.min(a, b), Math.max(a, b)];
+      let levels = {
+        buildZone: mkRange(base - vol * 0.4, base - vol * 0.1),
+        addZone: mkRange(base - vol * 0.1, base + vol * 0.2),
+        reduceZone: mkRange(base + vol * 0.9, base + vol * 1.6),
+        defense: base - vol * 1.2,
+        targets: [base + vol * 1.5, base + vol * 3.0],
+        rebalance: "价格偏离建仓区过远时，优先等回踩/反弹再调整仓位。"
+      };
+      let allocation = {
+        base: 0.25,
+        add: 0.25,
+        breakout: 0.2,
+        flexible: 0.3,
+        note: "中性阶段先轻仓，确认方向后再提高仓位。"
+      };
+      if (bias.includes("偏多")) {
+        levels = {
+          buildZone: mkRange(support - vol * 0.15, support + vol * 0.35),
+          addZone: mkRange(base - vol * 0.2, base + vol * 0.25),
+          reduceZone: mkRange(resistance + vol * 0.6, resistance + vol * 1.5),
+          defense: support - vol * 1.15,
+          targets: [resistance + vol * 1.1, resistance + vol * 2.5],
+          rebalance: "长线偏多：回踩建仓区吸筹，突破减仓区后逐步落袋并保留趋势仓。"
+        };
+        allocation = {
+          base: 0.3,
+          add: 0.3,
+          breakout: 0.2,
+          flexible: 0.2,
+          note: "偏多结构下，优先把仓位放在建仓/加仓区，突破后留趋势仓。"
+        };
+      } else if (bias.includes("偏空")) {
+        levels = {
+          buildZone: mkRange(resistance - vol * 0.35, resistance + vol * 0.15),
+          addZone: mkRange(base - vol * 0.25, base + vol * 0.2),
+          reduceZone: mkRange(support - vol * 1.5, support - vol * 0.6),
+          defense: resistance + vol * 1.15,
+          targets: [support - vol * 1.1, support - vol * 2.5],
+          rebalance: "长线偏空：反弹到建仓区择机对冲/减仓，跌入减仓区后分批止盈。"
+        };
+        allocation = {
+          base: 0.35,
+          add: 0.25,
+          breakout: 0.15,
+          flexible: 0.25,
+          note: "偏空结构下，反弹区优先处理风险敞口，机动仓用于对冲波动。"
+        };
+      }
+
+      return {
+        bias,
+        score,
+        confidence,
+        horizon: "7-30天",
+        reasons: reasons.slice(0, 3),
+        positioning,
+        levels,
+        allocation
+      };
+    }
+
+    function formatPriceRange(range) {
+      if (!Array.isArray(range) || range.length < 2 || !Number.isFinite(range[0]) || !Number.isFinite(range[1])) return "--";
+      return `${fmtPriceSmart(range[0])} ~ ${fmtPriceSmart(range[1])}`;
+    }
+
+    function explainLongTerm(result) {
+      const v = result.longTermView;
+      if (!v) return "长线视角暂无";
+      const reasonTxt = v.reasons?.length ? v.reasons.join("、") : "均线与趋势信号中性";
+      const levelsTxt = v.levels
+        ? `建仓区 ${formatPriceRange(v.levels.buildZone)}；防守位 ${fmtPriceSmart(v.levels.defense)}`
+        : "点位缺失";
+      return `周期 ${v.horizon}；置信度 ${v.confidence}%；依据：${reasonTxt}；${levelsTxt}`;
+    }
+
+    function explainLongTermLevels(result) {
+      const v = result.longTermView;
+      if (!v?.levels) return "长线点位暂无";
+      return `建仓 ${formatPriceRange(v.levels.buildZone)}；加仓 ${formatPriceRange(v.levels.addZone)}；减仓 ${formatPriceRange(v.levels.reduceZone)}；目标 ${v.levels.targets.map((x) => fmtPriceSmart(x)).join(" / ")}`;
+    }
+
+    function explainLongTermAllocation(result) {
+      const a = result.longTermView?.allocation;
+      if (!a) return "仓位配比暂无";
+      return `基础仓${fmt(a.base * 100, 0)}% / 加仓${fmt(a.add * 100, 0)}% / 突破仓${fmt(a.breakout * 100, 0)}% / 机动仓${fmt(a.flexible * 100, 0)}%；${a.note}`;
+    }
+
+    function getShortLongAlignment(item) {
+      const shortSide = item?.plan?.side || "观望";
+      const longBias = item?.longTermView?.bias || "中性震荡";
+      const shortDir = shortSide === "多" ? "long" : (shortSide === "空" ? "short" : "neutral");
+      const longDir = longBias.includes("偏多") ? "long" : (longBias.includes("偏空") ? "short" : "neutral");
+      if (shortDir === "neutral" || longDir === "neutral") return "中性过渡";
+      if (shortDir === longDir) return "同向增强";
+      return "短长冲突";
+    }
+
+    function explainSupportResistance(result) {
+      if (!Number.isFinite(result.support) || !Number.isFinite(result.resistance)) return "支撑/压力数据不足";
+      const sDrift = Number.isFinite(result.srSupportDriftPct) ? result.srSupportDriftPct : null;
+      const rDrift = Number.isFinite(result.srResistanceDriftPct) ? result.srResistanceDriftPct : null;
+      const rawInfo = (Number.isFinite(result.rawSupport) && Number.isFinite(result.rawResistance))
+        ? `原始区间 ${fmtPriceSmart(result.rawSupport)} ~ ${fmtPriceSmart(result.rawResistance)}`
+        : "原始区间缺失";
+      const driftInfo = (sDrift !== null && rDrift !== null)
+        ? `抗插针偏移 支撑${fmt(sDrift, 2)}% / 压力${fmt(rDrift, 2)}%`
+        : "偏移未知";
+      return `${rawInfo}；${driftInfo}`;
+    }
+
+    function buildPlanSourceText(result) {
+      const p = result.plan;
+      const baseInfo = `当前价 ${fmtPriceSmart(result.close)}，支撑位 ${fmtPriceSmart(result.support)}，压力位 ${fmtPriceSmart(result.resistance)}，波动基准(ATR14) ${fmtPriceSmart(result.atr14)}。`;
+      const srInfo = (Number.isFinite(result.rawSupport) && Number.isFinite(result.rawResistance))
+        ? `原始极值S/R：${fmtPriceSmart(result.rawSupport)} ~ ${fmtPriceSmart(result.rawResistance)}；抗插针偏移：支撑${fmt(result.srSupportDriftPct, 2)}% / 压力${fmt(result.srResistanceDriftPct, 2)}%。`
+        : "原始极值S/R缺失。";
+      const lt = result.longTermView;
+      const ltInfo = lt
+        ? `长线视角(${lt.horizon})：${lt.bias}，评分 ${fmt(lt.score, 2)}，置信度 ${lt.confidence}%。仓位建议：${lt.positioning}`
+        : "长线视角缺失。";
+      const ltLevelsInfo = lt?.levels
+        ? `长线点位：建仓区 ${formatPriceRange(lt.levels.buildZone)}；加仓区 ${formatPriceRange(lt.levels.addZone)}；减仓区 ${formatPriceRange(lt.levels.reduceZone)}；防守位 ${fmtPriceSmart(lt.levels.defense)}；目标位 ${lt.levels.targets.map((x) => fmtPriceSmart(x)).join(" / ")}。`
+        : "长线点位缺失。";
+      const ltAllocInfo = lt?.allocation
+        ? `长线仓位配比：基础仓 ${fmt(lt.allocation.base * 100, 0)}%，加仓 ${fmt(lt.allocation.add * 100, 0)}%，突破仓 ${fmt(lt.allocation.breakout * 100, 0)}%，机动仓 ${fmt(lt.allocation.flexible * 100, 0)}%。`
+        : "长线仓位配比缺失。";
+      const bullets = [];
+      const formulas = [
+        `<div><b>close</b>${fmtPriceSmart(result.close)} | <b>support</b>${fmtPriceSmart(result.support)} | <b>resistance</b>${fmtPriceSmart(result.resistance)} | <b>ATR14</b>${fmtPriceSmart(result.atr14)}</div>`
+      ];
+      if (p.side === "多") {
+        bullets.push(`做多建议：优先等回踩到 ${fmtPriceSmart(p.entry[0])} - ${fmtPriceSmart(p.entry[1])} 再分批，不追高。`);
+        bullets.push(`止盈参考：${formatTakeProfitLadder(p)}。`);
+        bullets.push(`风控线：跌破 ${fmtPriceSmart(p.sl)} 说明这笔思路失效。`);
+        if (p.trailing?.activate) bullets.push(`移动止盈：价格到 ${fmtPriceSmart(p.trailing.activate)} 后，按 ${fmt(p.trailing.stepAtr, 2)} ATR 跟踪止盈。`);
+        formulas.push(`<div>入场区 = support + 0.35/0.7 * (close-support) -> ${fmtPriceSmart(p.entry[0])} / ${fmtPriceSmart(p.entry[1])}</div>`);
+        formulas.push(`<div>分层止盈 = close + 0.85/1.7/2.6*ATR(趋势加权) -> ${fmtPriceSmart(p.tp[0])} / ${fmtPriceSmart(p.tp[1])} / ${fmtPriceSmart(p.tp[2])}</div>`);
+        formulas.push(`<div>止损 = support - 0.72 * ATR -> ${fmtPriceSmart(p.sl)}</div>`);
+      } else if (p.side === "空") {
+        bullets.push(`做空建议：优先等反弹到 ${fmtPriceSmart(p.entry[0])} - ${fmtPriceSmart(p.entry[1])} 再分批，不追空。`);
+        bullets.push(`止盈参考：${formatTakeProfitLadder(p)}。`);
+        bullets.push(`风控线：上破 ${fmtPriceSmart(p.sl)} 说明这笔思路失效。`);
+        if (p.trailing?.activate) bullets.push(`移动止盈：价格到 ${fmtPriceSmart(p.trailing.activate)} 后，按 ${fmt(p.trailing.stepAtr, 2)} ATR 跟踪止盈。`);
+        formulas.push(`<div>入场区 = close + 0.35/0.7 * (resistance-close) -> ${fmtPriceSmart(p.entry[0])} / ${fmtPriceSmart(p.entry[1])}</div>`);
+        formulas.push(`<div>分层止盈 = close - 0.85/1.7/2.6*ATR(趋势加权) -> ${fmtPriceSmart(p.tp[0])} / ${fmtPriceSmart(p.tp[1])} / ${fmtPriceSmart(p.tp[2])}</div>`);
+        formulas.push(`<div>止损 = resistance + 0.72 * ATR -> ${fmtPriceSmart(p.sl)}</div>`);
+      } else {
+        bullets.push(`当前偏观望：若回踩到 ${fmtPriceSmart(p.entry[0])} - ${fmtPriceSmart(p.entry[1])} 并企稳，可小仓位试单。`);
+        bullets.push(`上方观察位：${formatTakeProfitLadder(p)}。`);
+        bullets.push(`防守线：${fmtPriceSmart(p.sl)}，跌破后优先等待新信号。`);
+        formulas.push(`<div>入场区 = support + 0.45/0.55 * (close-support) -> ${fmtPriceSmart(p.entry[0])} / ${fmtPriceSmart(p.entry[1])}</div>`);
+        formulas.push(`<div>参考止盈 = close + 0.7/1.4 * ATR -> ${fmtPriceSmart(p.tp[0])} / ${fmtPriceSmart(p.tp[1])}</div>`);
+        formulas.push(`<div>参考止损 = support - 0.7 * ATR -> ${fmtPriceSmart(p.sl)}</div>`);
+      }
+      return `
+        <div class="analysis-plan-brief">${baseInfo}</div>
+        <div class="analysis-plan-brief">${srInfo}</div>
+        <div class="analysis-plan-brief">${ltInfo}</div>
+        <div class="analysis-plan-brief">${ltLevelsInfo}</div>
+        <div class="analysis-plan-brief">${ltAllocInfo}</div>
+        <ul class="analysis-plan-list">
+          ${bullets.map((x) => `<li>${x}</li>`).join("")}
+        </ul>
+        <details>
+          <summary>查看计算过程</summary>
+          ${formulas.join("")}
+        </details>
+      `;
+    }
+
+    function toCsvCell(v) {
+      const s = String(v ?? "");
+      const escaped = s.replace(/\"/g, "\"\"");
+      return `"${escaped}"`;
+    }
+
+    function downloadCsv(filename, headers, rows) {
+      const lines = [
+        headers.map(toCsvCell).join(","),
+        ...rows.map((row) => row.map(toCsvCell).join(","))
+      ];
+      const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function downloadManualAnalysis() {
+      if (!lastManualAnalysis) {
+        els.status.textContent = "请先运行一次手动分析，再下载。";
+        return;
+      }
+      const r = lastManualAnalysis;
+      const p = r.plan;
+      const headers = ["币种", "评级", "结论", "综合分", "数据范围", "趋势", "MACD柱体", "ADX14", "+DI", "-DI", "布林位置", "VWAP偏离%", "拥挤度组合", "资金费率%", "资金周期h", "OI24h%", "大户多空", "主动买卖", "盘口失衡%", "盘口集中度(自定义)", "长线偏向", "长线评分", "长线置信度%", "长线点位", "长线仓位配比", "风险标签", "入场区", "止盈", "止盈分批", "止损", "文字分析"];
+      const rows = [[
+        r.symbol,
+        r.grade,
+        r.bias,
+        fmt(r.score, 2),
+        r.marketScope,
+        r.trend,
+        r.macdHist === null ? "--" : Number(r.macdHist).toFixed(6),
+        r.adx14 === null ? "--" : Number(r.adx14).toFixed(2),
+        r.plusDi === null ? "--" : Number(r.plusDi).toFixed(2),
+        r.minusDi === null ? "--" : Number(r.minusDi).toFixed(2),
+        r.bbPos === null ? "--" : Number(r.bbPos).toFixed(3),
+        r.vwapDevPct === null ? "--" : Number(r.vwapDevPct).toFixed(2),
+        r.crowdingRegime === "long_crowded" ? "多头拥挤" : (r.crowdingRegime === "short_crowded" ? "空头拥挤" : "中性"),
+        r.fundingPct === null ? "--" : Number(r.fundingPct).toFixed(4),
+        r.fundingIntervalHours,
+        r.oiChange === null ? "--" : Number(r.oiChange).toFixed(2),
+        r.topLsLast === null ? "--" : Number(r.topLsLast).toFixed(4),
+        r.takerLast === null ? "--" : Number(r.takerLast).toFixed(4),
+        ((r.imbalance || 0) * 100).toFixed(2),
+        concentrationLabel(r.concentrationScore),
+        r.longTermView?.bias || "中性震荡",
+        r.longTermView ? fmt(r.longTermView.score, 2) : "--",
+        r.longTermView?.confidence ?? "--",
+        r.longTermView?.levels
+          ? `建仓${formatPriceRange(r.longTermView.levels.buildZone)}|加仓${formatPriceRange(r.longTermView.levels.addZone)}|减仓${formatPriceRange(r.longTermView.levels.reduceZone)}|防守${fmtPriceSmart(r.longTermView.levels.defense)}|目标${r.longTermView.levels.targets.map((x) => fmtPriceSmart(x)).join("/")}`
+          : "--",
+        r.longTermView?.allocation
+          ? `基础${fmt(r.longTermView.allocation.base * 100, 0)}% 加仓${fmt(r.longTermView.allocation.add * 100, 0)}% 突破${fmt(r.longTermView.allocation.breakout * 100, 0)}% 机动${fmt(r.longTermView.allocation.flexible * 100, 0)}%`
+          : "--",
+        (r.riskTags.length ? r.riskTags : ["风险可控"]).join(" | "),
+        `${fmtPriceSmart(p.entry[0])} - ${fmtPriceSmart(p.entry[1])}`,
+        formatTakeProfitText(p),
+        formatTakeProfitLadder(p),
+        fmtPriceSmart(p.sl),
+        buildNarrative(r)
+      ]];
+      downloadCsv(`manual-analysis-${r.symbol}-${Date.now()}.csv`, headers, rows);
+    }
+
+    function downloadAutoAnalysis() {
+      const all = [...(lastAutoAnalysis.longList || []), ...(lastAutoAnalysis.shortList || []), ...(lastAutoAnalysis.neutralList || [])];
+      if (!all.length) {
+        els.status.textContent = "请先运行一次自动分析，再下载。";
+        return;
+      }
+      const headers = ["方向", "币种", "评级", "结论", "综合分", "数据范围", "MACD柱体", "ADX14", "布林位置", "VWAP偏离%", "拥挤度组合", "盘口集中度(自定义)", "长线偏向", "短长一致性", "长线评分", "长线置信度%", "长线点位", "长线仓位配比", "风险标签", "入场区", "止盈", "止盈分批", "止损", "文字分析"];
+      const rows = all.map((x) => {
+        const side = x.plan?.side || "观望";
+        return [
+          side,
+          x.symbol,
+          x.grade,
+          x.bias,
+          fmt(x.score, 2),
+          x.marketScope,
+          x.macdHist === null ? "--" : Number(x.macdHist).toFixed(6),
+          x.adx14 === null ? "--" : Number(x.adx14).toFixed(2),
+          x.bbPos === null ? "--" : Number(x.bbPos).toFixed(3),
+          x.vwapDevPct === null ? "--" : Number(x.vwapDevPct).toFixed(2),
+          x.crowdingRegime === "long_crowded" ? "多头拥挤" : (x.crowdingRegime === "short_crowded" ? "空头拥挤" : "中性"),
+          concentrationLabel(x.concentrationScore),
+          x.longTermView?.bias || "中性震荡",
+          getShortLongAlignment(x),
+          x.longTermView ? fmt(x.longTermView.score, 2) : "--",
+          x.longTermView?.confidence ?? "--",
+          x.longTermView?.levels
+            ? `建仓${formatPriceRange(x.longTermView.levels.buildZone)}|加仓${formatPriceRange(x.longTermView.levels.addZone)}|减仓${formatPriceRange(x.longTermView.levels.reduceZone)}|防守${fmtPriceSmart(x.longTermView.levels.defense)}|目标${x.longTermView.levels.targets.map((v) => fmtPriceSmart(v)).join("/")}`
+            : "--",
+          x.longTermView?.allocation
+            ? `基础${fmt(x.longTermView.allocation.base * 100, 0)}% 加仓${fmt(x.longTermView.allocation.add * 100, 0)}% 突破${fmt(x.longTermView.allocation.breakout * 100, 0)}% 机动${fmt(x.longTermView.allocation.flexible * 100, 0)}%`
+            : "--",
+          (x.riskTags.length ? x.riskTags : ["风险可控"]).join(" | "),
+          `${fmtPriceSmart(x.plan.entry[0])} - ${fmtPriceSmart(x.plan.entry[1])}`,
+          formatTakeProfitText(x.plan),
+          formatTakeProfitLadder(x.plan),
+          fmtPriceSmart(x.plan.sl),
+          buildNarrative(x)
+        ];
+      });
+      downloadCsv(`auto-analysis-${Date.now()}.csv`, headers, rows);
+    }
+
+    function formatTakeProfitText(plan) {
+      if (!plan?.tp || !Array.isArray(plan.tp)) return "--";
+      const parts = [
+        fmtPriceSmart(plan.tp[0]),
+        fmtPriceSmart(plan.tp[1])
+      ];
+      if (Number.isFinite(plan.tp[2])) parts.push(fmtPriceSmart(plan.tp[2]));
+      return parts.join(" / ");
+    }
+
+    function formatTakeProfitLadder(plan) {
+      if (!plan?.tp || !Array.isArray(plan.tp) || !plan.tp.length) return "--";
+      const ratios = Array.isArray(plan.tpRatios) ? plan.tpRatios : [];
+      const out = [];
+      for (let i = 0; i < plan.tp.length; i += 1) {
+        const px = plan.tp[i];
+        if (!Number.isFinite(px)) continue;
+        const ratio = Number.isFinite(ratios[i]) ? ratios[i] : 0;
+        out.push(`TP${i + 1} ${fmtPriceSmart(px)}（${fmt(ratio * 100, 0)}%）`);
+      }
+      return out.join(" | ");
+    }
+
+    function computeTradePlan(ctx) {
+      const { close, support, resistance, atr14, score, trend, adx14, crowdingRegime } = ctx;
+      const vol = atr14 || close * 0.015;
+      const trendStrength = Number.isFinite(adx14) ? adx14 : 20;
+      const trendBoost = trendStrength >= 28 ? 1.22 : (trendStrength >= 22 ? 1.1 : 0.95);
+      const isLongCrowded = crowdingRegime === "long_crowded";
+      const isShortCrowded = crowdingRegime === "short_crowded";
+
+      if (score >= 1.5) {
+        const alignBoost = trend === "up" ? trendBoost : 0.92;
+        const tp3 = close + vol * (2.6 * alignBoost);
+        return {
+          side: "多",
+          entry: [support + 0.35 * (close - support), support + 0.7 * (close - support)],
+          tp: [close + vol * 0.85, close + vol * 1.7, tp3],
+          tpRatios: [0.3, 0.4, 0.3],
+          sl: support - vol * 0.72,
+          tpStyle: "短中结合",
+          trailing: {
+            activate: close + vol * 1.2,
+            stepAtr: isLongCrowded ? 0.9 : 0.8
+          }
+        };
+      }
+      if (score <= -1.5) {
+        const alignBoost = trend === "down" ? trendBoost : 0.92;
+        const tp3 = close - vol * (2.6 * alignBoost);
+        return {
+          side: "空",
+          entry: [close + 0.35 * (resistance - close), close + 0.7 * (resistance - close)],
+          tp: [close - vol * 0.85, close - vol * 1.7, tp3],
+          tpRatios: [0.3, 0.4, 0.3],
+          sl: resistance + vol * 0.72,
+          tpStyle: "短中结合",
+          trailing: {
+            activate: close - vol * 1.2,
+            stepAtr: isShortCrowded ? 0.9 : 0.8
+          }
+        };
+      }
+      return {
+        side: "观望",
+        entry: [support + 0.45 * (close - support), support + 0.55 * (close - support)],
+        tp: [close + vol * 0.7, close + vol * 1.4],
+        tpRatios: [0.5, 0.5],
+        sl: support - vol * 0.7,
+        tpStyle: "观察位",
+        trailing: null
+      };
+    }
+
+    async function analyzeSymbol(symbol) {
+      if (!symbol) return null;
+      const hasSpot = spotRows.some((s) => s.symbol === symbol);
+      const hasFutures = futuresRows.some((f) => f.symbol === symbol);
+      const klineBases = hasSpot ? SPOT_BASES : FUTURES_BASES;
+      const klinePath = hasSpot ? KLINE_PATH : FUTURES_KLINE_PATH;
+      const depthBases = hasSpot ? SPOT_BASES : FUTURES_BASES;
+      const depthPath = hasSpot ? DEPTH_PATH : FUTURES_DEPTH_PATH;
+      // Futures-only symbols often return 400 on fapi depth; skip to avoid console spam.
+      const shouldSkipFuturesDepth = !hasSpot && hasFutures;
+      const depthPromise = shouldSkipFuturesDepth
+        ? Promise.resolve({ data: { bids: [], asks: [] } })
+        : fetchJsonWithFallback(depthBases, buildPath(depthPath, { symbol, limit: 200 }), { maxAttempts: 2 });
+      const futuresDataPromises = hasFutures ? [
+        fetchJsonWithFallback(FUTURES_BASES, buildPath(OI_HIST_PATH, { symbol, period: "5m", limit: 288 }), { maxAttempts: 2 }),
+        fetchJsonWithFallback(FUTURES_BASES, buildPath(TOP_LS_PATH, { symbol, period: "1h", limit: 24 }), { maxAttempts: 2 }),
+        fetchJsonWithFallback(FUTURES_BASES, buildPath(TAKER_LS_PATH, { symbol, period: "5m", limit: 48 }), { maxAttempts: 2 })
+      ] : [
+        Promise.resolve({ data: [] }),
+        Promise.resolve({ data: [] }),
+        Promise.resolve({ data: [] })
+      ];
+      const [klineR, depthR, oiR, topR, takerR] = await Promise.allSettled([
+        fetchJsonWithFallback(klineBases, buildPath(klinePath, { symbol, interval: "4h", limit: 180 }), { maxAttempts: 2 }),
+        depthPromise,
+        futuresDataPromises[0],
+        futuresDataPromises[1],
+        futuresDataPromises[2]
+      ]);
+
+      const kline = klineR.status === "fulfilled" ? (klineR.value.data || []) : [];
+      const depth = depthR.status === "fulfilled" ? (depthR.value.data || { bids: [], asks: [] }) : { bids: [], asks: [] };
+      const oiHist = oiR.status === "fulfilled" ? (oiR.value.data || []) : [];
+      const topLs = topR.status === "fulfilled" ? (topR.value.data || []) : [];
+      const takerLs = takerR.status === "fulfilled" ? (takerR.value.data || []) : [];
+      const missing = [];
+      if (depthR.status !== "fulfilled") {
+        missing.push("盘口");
+        const depthErr = depthR.reason?.cause || depthR.reason;
+        if (!hasSpot && hasFutures && Number(depthErr?.status) === 400) {
+          unsupportedFuturesDepthSymbols.add(symbol);
+        }
+      } else if (shouldSkipFuturesDepth) {
+        missing.push("盘口");
+      }
+      if (hasFutures && oiR.status !== "fulfilled") missing.push("OI");
+      if (hasFutures && topR.status !== "fulfilled") missing.push("大户多空");
+      if (hasFutures && takerR.status !== "fulfilled") missing.push("主动买卖");
+
+      if (kline.length < 60) return null;
+      const closes = kline.map((x) => num(x[4])).filter((x) => x !== null);
+      const highs = kline.map((x) => num(x[2])).filter((x) => x !== null);
+      const lows = kline.map((x) => num(x[3])).filter((x) => x !== null);
+      const volumes = kline.map((x) => num(x[5])).filter((x) => x !== null);
+      const close = closes[closes.length - 1];
+      const rawSupport = Math.min(...lows.slice(-30));
+      const rawResistance = Math.max(...highs.slice(-30));
+      const sr = robustSupportResistance(highs, lows, closes, 30);
+      const support = sr.support;
+      const resistance = sr.resistance;
+      const srSupportDriftPct = (rawSupport && Number.isFinite(rawSupport))
+        ? ((support - rawSupport) / rawSupport) * 100
+        : null;
+      const srResistanceDriftPct = (rawResistance && Number.isFinite(rawResistance))
+        ? ((resistance - rawResistance) / rawResistance) * 100
+        : null;
+      const sma20 = sma(closes, 20);
+      const sma50 = sma(closes, 50);
+      const sma120 = sma(closes, 120);
+      const rsi14 = rsi(closes, 14);
+      const atr14 = atr(highs, lows, closes, 14);
+      const closeLookback = Math.min(24, closes.length - 1);
+      const closeBase = closeLookback > 0 ? closes[closes.length - 1 - closeLookback] : null;
+      const closeChangePct = (closeBase && closeBase > 0) ? ((close - closeBase) / closeBase) * 100 : null;
+      const macdPack = macd(closes, 12, 26, 9);
+      const adxPack = adx(highs, lows, closes, 14);
+      const macdLine = macdPack?.macd ?? null;
+      const macdSignal = macdPack?.signal ?? null;
+      const macdHist = macdPack?.hist ?? null;
+      const macdHistPrev = macdPack?.prevHist ?? null;
+      const adx14 = adxPack?.adx ?? null;
+      const plusDi = adxPack?.plusDi ?? null;
+      const minusDi = adxPack?.minusDi ?? null;
+      const bbPack = bollinger(closes, 20, 2);
+      const bbPos = bbPack?.pos ?? null;
+      const bbWidthPct = bbPack?.widthPct ?? null;
+      const vwap48 = rollingVwap(closes, volumes, 48);
+      const vwapDevPct = (vwap48 && Number.isFinite(vwap48)) ? ((close - vwap48) / vwap48) * 100 : null;
+
+      const trend = (sma20 && sma50)
+        ? (close > sma20 && sma20 > sma50 ? "up" : (close < sma20 && sma20 < sma50 ? "down" : "side"))
+        : "side";
+
+      const bids = (depth.bids || []).map(([px, q]) => [num(px), num(q)]).filter(([px, q]) => px && q);
+      const asks = (depth.asks || []).map(([px, q]) => [num(px), num(q)]).filter(([px, q]) => px && q);
+      const depthBandAbs = (atr14 && Number.isFinite(atr14))
+        ? Math.max(close * 0.002, atr14 * 0.5)
+        : close * 0.01;
+      const lowBand = Math.max(0, close - depthBandAbs);
+      const highBand = close + depthBandAbs;
+      const bidVals = bids.filter(([px]) => px >= lowBand && px <= close).map(([px, q]) => px * q);
+      const askVals = asks.filter(([px]) => px >= close && px <= highBand).map(([px, q]) => px * q);
+      const bidSum = bidVals.reduce((a, b) => a + b, 0);
+      const askSum = askVals.reduce((a, b) => a + b, 0);
+      const imbalance = (bidSum + askSum) ? (bidSum - askSum) / (bidSum + askSum) : 0;
+      const bidHHI = hhi(bidVals);
+      const askHHI = hhi(askVals);
+      const concentrationScore = (bidHHI === null && askHHI === null)
+        ? null
+        : ((bidHHI || 0) + (askHHI || 0)) / 2;
+
+      const oiChange = oiHist.length > 1
+        ? (() => {
+          const start = num(oiHist[0]?.sumOpenInterestValue);
+          const end = num(oiHist[oiHist.length - 1]?.sumOpenInterestValue);
+          if (!start || !end) return null;
+          return (end - start) / start * 100;
+        })()
+        : null;
+      const topLsLast = topLs.length ? num(topLs[topLs.length - 1]?.longShortRatio) : null;
+      const takerLast = takerLs.length ? num(takerLs[takerLs.length - 1]?.buySellRatio) : null;
+      const takerMean = takerLs.length
+        ? takerLs.reduce((s, x) => s + (num(x.buySellRatio) || 0), 0) / takerLs.length
+        : null;
+
+      const fut = futuresRows.find((x) => x.symbol === symbol);
+      const spot = spotRows.find((x) => x.symbol === symbol);
+      const fundingPct = fut?.fundingPct ?? null;
+      const basisPct = (spot?.price && fut?.price) ? ((fut.price - spot.price) / spot.price) * 100 : null;
+      let crowdingRegime = "neutral";
+      const crossVenue = getCrossVenueSignal(symbol);
+
+      const directionContrib = [];
+      const convictionContrib = [];
+      const triggerContrib = [];
+      const addContrib = (arr, name, value) => {
+        if (!Number.isFinite(value) || value === 0) return;
+        arr.push({ name, value });
+      };
+
+      // 方向层：趋势结构优先，回答“做哪边”
+      if (trend === "up") addContrib(directionContrib, "趋势结构", 1);
+      else if (trend === "down") addContrib(directionContrib, "趋势结构", -1);
+      if (rsi14 !== null) {
+        addContrib(directionContrib, "RSI位置", (rsi14 >= 40 && rsi14 <= 60) ? 0.25 : (rsi14 > 70 ? -0.35 : (rsi14 < 30 ? 0.25 : 0)));
+      }
+      if (macdHist !== null) {
+        addContrib(directionContrib, "MACD柱体方向", macdHist > 0 ? 0.55 : (macdHist < 0 ? -0.55 : 0));
+      }
+      if (macdHist !== null && macdHistPrev !== null) {
+        addContrib(directionContrib, "MACD动能变化", macdHist > macdHistPrev ? 0.15 : -0.15);
+      }
+      if (adx14 !== null) {
+        if (adx14 >= 25 && plusDi !== null && minusDi !== null) {
+          addContrib(directionContrib, "ADX+DI方向", plusDi > minusDi ? 0.35 : (minusDi > plusDi ? -0.35 : 0));
+        }
+      }
+      if (bbPos !== null && adx14 !== null && adx14 >= 25) {
+        addContrib(directionContrib, "布林顺势位置", trend === "up" && bbPos > 0.6 ? 0.2 : (trend === "down" && bbPos < 0.4 ? -0.2 : 0));
+      }
+      if (vwapDevPct !== null && !(adx14 !== null && adx14 < 20)) {
+        addContrib(directionContrib, "VWAP顺势偏离", trend === "up" && vwapDevPct > 0.2 ? 0.2 : (trend === "down" && vwapDevPct < -0.2 ? -0.2 : 0));
+      }
+      if (crossVenue) {
+        addContrib(directionContrib, "跨所共振", crossVenue.consensus === "up" ? 0.25 : (crossVenue.consensus === "down" ? -0.25 : 0));
+      }
+      if (oiChange !== null && closeChangePct !== null) {
+        if (oiChange > 8 && closeChangePct > 2) {
+          addContrib(directionContrib, "价升OI增（多头建仓）", 0.45);
+        } else if (oiChange > 8 && closeChangePct < -2) {
+          addContrib(directionContrib, "价跌OI增（空头建仓）", -0.45);
+        }
+      }
+
+      // 定力层：资金拥挤与持续性，回答“能不能扛得住”
+      if (fundingPct !== null) {
+        addContrib(convictionContrib, "资金费率", fundingPct < 0 ? 1 : (fundingPct > 0.02 ? -1 : 0));
+      }
+      if (topLsLast !== null) {
+        addContrib(convictionContrib, "大户多空比", topLsLast < 0.9 ? 0.7 : (topLsLast > 1.8 ? -0.7 : 0));
+      }
+      if (oiChange !== null) {
+        addContrib(convictionContrib, "OI变化", (oiChange > -3 && oiChange < 8) ? 0.35 : (oiChange > 12 ? -0.35 : 0));
+      }
+      if (adx14 !== null && adx14 < 20) {
+        addContrib(convictionContrib, "趋势强度衰减", -0.2);
+      }
+      if (fundingPct !== null && basisPct !== null && oiChange !== null && oiChange > 8) {
+        if (fundingPct > 0.02 && basisPct > 0.5) {
+          addContrib(convictionContrib, "多头拥挤惩罚", -0.5);
+          crowdingRegime = "long_crowded";
+        } else if (fundingPct < -0.02 && basisPct < -0.5) {
+          addContrib(convictionContrib, "空头拥挤反弹加分", 0.5);
+          crowdingRegime = "short_crowded";
+        }
+      }
+      if (crossVenue) {
+        if (crossVenue.dispersionPct !== null && crossVenue.dispersionPct > 1) addContrib(convictionContrib, "跨所离散惩罚", -0.15);
+      }
+      if (askHHI !== null && askHHI > 0.12) addContrib(convictionContrib, "卖盘集中风险", -0.2);
+      if (bidHHI !== null && bidHHI > 0.12) addContrib(convictionContrib, "买盘集中风险", -0.1);
+      if (concentrationScore > 0.12) addContrib(convictionContrib, "盘口集中度惩罚", -0.35);
+
+      // 触发层：盘口与主动成交，回答“现在是不是进场窗口”
+      if (takerLast !== null) {
+        addContrib(triggerContrib, "主动买卖比", takerLast > 1.05 ? 1 : (takerLast < 0.95 ? -1 : 0));
+      }
+      addContrib(triggerContrib, "盘口失衡", imbalance > 0.08 ? 0.8 : (imbalance < -0.08 ? -0.8 : 0));
+      if (bbPos !== null && !(adx14 !== null && adx14 >= 25)) {
+        addContrib(triggerContrib, "布林触发", bbPos < 0.1 ? 0.35 : (bbPos > 0.9 ? -0.35 : 0));
+      }
+      if (vwapDevPct !== null && adx14 !== null && adx14 < 20) {
+        addContrib(triggerContrib, "VWAP回归触发", vwapDevPct <= -1 ? 0.3 : (vwapDevPct >= 1 ? -0.3 : 0));
+      }
+      if (oiChange !== null && closeChangePct !== null) {
+        if (oiChange < -8 && closeChangePct < -2) {
+          addContrib(triggerContrib, "急跌减仓后反抽触发", 0.35);
+        } else if (oiChange < -8 && closeChangePct > 2) {
+          addContrib(triggerContrib, "急涨减仓后回落触发", -0.35);
+        }
+      }
+
+      const sumLayer = (arr) => arr.reduce((acc, x) => acc + x.value, 0);
+      const directionScore = sumLayer(directionContrib);
+      const convictionScore = sumLayer(convictionContrib);
+      const triggerScore = sumLayer(triggerContrib);
+      const layerWeights = { direction: 0.45, conviction: 0.35, trigger: 0.2 };
+      let score = directionScore * layerWeights.direction
+        + convictionScore * layerWeights.conviction
+        + triggerScore * layerWeights.trigger;
+
+      const layerConflict = (Math.abs(directionScore) >= 0.8 && Math.abs(triggerScore) >= 0.8 && (directionScore * triggerScore < 0));
+      if (layerConflict) score *= 0.75;
+
+      const dominantFactors = [
+        ...directionContrib.map((x) => ({ layer: "方向层", name: x.name, value: x.value })),
+        ...convictionContrib.map((x) => ({ layer: "定力层", name: x.name, value: x.value })),
+        ...triggerContrib.map((x) => ({ layer: "触发层", name: x.name, value: x.value }))
+      ]
+        .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
+        .slice(0, 3);
+
+      const longTermView = deriveLongTermView({
+        close,
+        support,
+        resistance,
+        atr14,
+        trend,
+        adx14,
+        sma50,
+        sma120,
+        closeChangePct,
+        fundingPct,
+        crowdingRegime,
+        crossConsensus: crossVenue?.consensus ?? null,
+        crossDispersionPct: crossVenue?.dispersionPct ?? null
+      });
+
+      const plan = computeTradePlan({ close, support, resistance, atr14, score, trend, adx14, crowdingRegime });
+      const riskTags = deriveRiskTags({
+        topLsLast,
+        imbalance,
+        oiChange,
+        fundingPct,
+        atr14,
+        close,
+        rsi14,
+        adx14,
+        concentrationScore,
+        bbPos,
+        crowdingRegime,
+        crossDispersionPct: crossVenue?.dispersionPct ?? null
+      });
+      if (layerConflict) riskTags.push("分层冲突：方向层与触发层反向");
+      const grade = getSignalGrade(score, riskTags.length);
+      return {
+        symbol,
+        score,
+        grade,
+        marketScope: hasSpot && hasFutures ? "现货+合约" : (hasSpot ? "仅现货" : "仅合约"),
+        bias: toBias(score),
+        close,
+        support,
+        resistance,
+        rawSupport,
+        rawResistance,
+        srSupportDriftPct,
+        srResistanceDriftPct,
+        fundingPct,
+        fundingIntervalHours: fut?.fundingIntervalHours || 8,
+        basisPct,
+        closeChangePct,
+        oiChange,
+        topLsLast,
+        takerLast,
+        takerMean,
+        imbalance,
+        trend,
+        rsi14,
+        atr14,
+        sma50,
+        sma120,
+        macdLine,
+        macdSignal,
+        macdHist,
+        macdHistPrev,
+        adx14,
+        plusDi,
+        minusDi,
+        bbPos,
+        bbWidthPct,
+        vwap48,
+        vwapDevPct,
+        crowdingRegime,
+        crossVenueCount: crossVenue?.venues ?? null,
+        crossDispersionPct: crossVenue?.dispersionPct ?? null,
+        crossConsensus: crossVenue?.consensus ?? null,
+        bidHHI,
+        askHHI,
+        concentrationScore,
+        depthBandAbs,
+        layerScores: {
+          direction: directionScore,
+          conviction: convictionScore,
+          trigger: triggerScore
+        },
+        dominantFactors,
+        longTermView,
+        layerConflict,
+        dataMissing: missing,
+        riskTags,
+        plan
+      };
+    }
+
+    function renderManualAnalysis(result) {
+      if (!result) {
+        lastManualAnalysis = null;
+        els.analysisResult.innerHTML = "<span class='muted'>该币种分析数据不足或拉取失败</span>";
+        return;
+      }
+      lastManualAnalysis = result;
+      const p = result.plan;
+      const narrative = buildNarrative(result, false);
+      const narrativeEvidence = buildNarrative(result, true);
+      const focusPoints = getPriorityPoints(result);
+      const layerScores = result.layerScores || { direction: 0, conviction: 0, trigger: 0 };
+      const dominantText = (result.dominantFactors || [])
+        .map((x) => `${x.layer}-${x.name} ${x.value > 0 ? "+" : ""}${fmt(x.value, 2)}`)
+        .join(" | ");
+      const sideCls = p.side === "多" ? "pos" : (p.side === "空" ? "neg" : "warn");
+      const biasCls = result.score >= 1.5 ? "pos" : result.score <= -1.5 ? "neg" : "warn";
+      const spot = spotRows.find((x) => x.symbol === result.symbol);
+      const fut = futuresRows.find((x) => x.symbol === result.symbol);
+      let priceSummary = "当前价格：--";
+      if (spot?.price && fut?.price) {
+        const basisPctNow = (fut.price - spot.price) / spot.price * 100;
+        priceSummary = `当前价格：现货 ${fmtPriceSmart(spot.price)} | 合约 ${fmtPriceSmart(fut.price)} | 基差 ${Number(basisPctNow).toFixed(4)}%`;
+      } else if (spot?.price) {
+        priceSummary = `当前价格：现货 ${fmtPriceSmart(spot.price)}`;
+      } else if (fut?.price) {
+        priceSummary = `当前价格：合约 ${fmtPriceSmart(fut.price)}`;
+      } else if (result.close) {
+        priceSummary = `当前价格：${fmtPriceSmart(result.close)}`;
+      }
+      els.analysisResult.innerHTML = `
+        <div class="analysis-hero">
+          <div class="analysis-hero-main">
+            <div class="analysis-symbol">${result.symbol}</div>
+            <div class="analysis-symbol-price">${priceSummary}</div>
+            <div class="analysis-badges">
+              <span class="analysis-badge">数据范围 ${result.marketScope}</span>
+              <span class="analysis-badge">评级 <span class="grade ${gradeClass(result.grade)}">${result.grade}</span></span>
+              <span class="analysis-badge ${biasCls}">结论 ${result.bias}</span>
+              <span class="analysis-badge score ${biasCls}">综合分 ${fmt(result.score, 2)}</span>
+              <span class="analysis-badge">分层 D/C/T ${fmt(layerScores.direction, 2)} / ${fmt(layerScores.conviction, 2)} / ${fmt(layerScores.trigger, 2)}</span>
+              <span class="analysis-badge">长线 ${result.longTermView?.bias || "--"} (${result.longTermView?.horizon || "--"})</span>
+            </div>
+          </div>
+          <div class="analysis-action">
+            <div class="analysis-action-title">执行建议</div>
+            <div class="analysis-action-side ${sideCls}">${p.side}</div>
+            <div class="analysis-action-range">
+              入场 ${fmtPriceSmart(p.entry[0])} - ${fmtPriceSmart(p.entry[1])}<br />
+              止盈 ${formatTakeProfitText(p)}${p.tpStyle ? ` <span class="small">(${p.tpStyle})</span>` : ""}<br />
+              分批止盈 ${formatTakeProfitLadder(p)}<br />
+              ${p.trailing?.activate ? `跟踪止盈触发 ${fmtPriceSmart(p.trailing.activate)}（${fmt(p.trailing.stepAtr, 2)} ATR）<br />` : ""}
+              止损 ${fmtPriceSmart(p.sl)}
+            </div>
+            <div class="analysis-plan-source">${buildPlanSourceText(result)}</div>
+          </div>
+        </div>
+        <div class="analysis-focus">
+          <div class="analysis-focus-title">重点提示</div>
+          <div class="small muted" style="margin-bottom:6px;">主导因子：${dominantText || "暂无"}</div>
+          <ul class="analysis-focus-list">
+            ${focusPoints.map((x) => `<li class="${x.tone}">${x.text}</li>`).join("")}
+          </ul>
+        </div>
+        <div class="risk-tags">
+          ${(result.riskTags.length ? result.riskTags : ["风险可控"]).map((t) => `<span class="risk-tag">${t}</span>`).join("")}
+        </div>
+        ${result.dataMissing?.length ? `<div class="analysis-degrade">数据降级：${result.dataMissing.join("、")} 接口不可用，已用可用因子继续分析。</div>` : ""}
+        <div class="analysis-metrics">
+          <div class="analysis-metric"><span class="k">趋势 / RSI / ATR</span><span class="v">${result.trend} / ${fmt(result.rsi14, 2)} / ${fmt(result.atr14, 6)}</span><div class="analysis-metric-note">${explainTrendRsiAtr(result)}</div></div>
+          <div class="analysis-metric"><span class="k">MACD柱体 / ADX / +DI:-DI</span><span class="v">${fmt(result.macdHist, 6)} / ${fmt(result.adx14, 2)} / ${fmt(result.plusDi, 2)}:${fmt(result.minusDi, 2)}</span><div class="analysis-metric-note">${explainMacdAdx(result)}</div></div>
+          <div class="analysis-metric"><span class="k">布林位置 / VWAP偏离 / 拥挤度</span><span class="v">${fmt(result.bbPos, 3)} / ${pct(result.vwapDevPct, 2)} / ${result.crowdingRegime === "long_crowded" ? "多头拥挤" : (result.crowdingRegime === "short_crowded" ? "空头拥挤" : "中性")}</span><div class="analysis-metric-note">${explainBollingerVwapCrowding(result)}</div></div>
+          <div class="analysis-metric"><span class="k">跨所共振 / 价差离散</span><span class="v">${result.crossConsensus === "up" ? "偏多" : (result.crossConsensus === "down" ? "偏空" : (result.crossConsensus === "mixed" ? "分歧" : "--"))} / ${result.crossDispersionPct === null ? "--" : `${fmt(result.crossDispersionPct, 3)}%`}</span><div class="analysis-metric-note">${explainCrossVenue(result)}</div></div>
+          <div class="analysis-metric"><span class="k">资金费（周期）</span><span class="v">${pct(result.fundingPct, 4)} <span class="small">(${fmt(result.fundingIntervalHours, 0)}h)</span></span><div class="analysis-metric-note">${explainFunding(result)}</div></div>
+          <div class="analysis-metric"><span class="k">近24根价格变化 / OI语义</span><span class="v">${pct(result.closeChangePct, 2)} / ${result.oiChange === null ? "--" : pct(result.oiChange, 2)}</span><div class="analysis-metric-note">${explainOiBinding(result)}</div></div>
+          <div class="analysis-metric"><span class="k">长线视角（7-30天）</span><span class="v">${result.longTermView?.bias || "--"} / ${result.longTermView ? fmt(result.longTermView.score, 2) : "--"} / ${result.longTermView ? `${result.longTermView.confidence}%` : "--"}</span><div class="analysis-metric-note">${explainLongTerm(result)}</div></div>
+          <div class="analysis-metric"><span class="k">长线点位（建/加/减/防守）</span><span class="v">${formatPriceRange(result.longTermView?.levels?.buildZone)} / ${formatPriceRange(result.longTermView?.levels?.addZone)} / ${formatPriceRange(result.longTermView?.levels?.reduceZone)} / ${fmtPriceSmart(result.longTermView?.levels?.defense)}</span><div class="analysis-metric-note">${explainLongTermLevels(result)}</div></div>
+          <div class="analysis-metric"><span class="k">长线仓位配比（基础/加仓/突破/机动）</span><span class="v">${result.longTermView?.allocation ? `${fmt(result.longTermView.allocation.base * 100, 0)} / ${fmt(result.longTermView.allocation.add * 100, 0)} / ${fmt(result.longTermView.allocation.breakout * 100, 0)} / ${fmt(result.longTermView.allocation.flexible * 100, 0)} %` : "--"}</span><div class="analysis-metric-note">${explainLongTermAllocation(result)}</div></div>
+          <div class="analysis-metric"><span class="k">OI变化 / 大户多空</span><span class="v">${pct(result.oiChange, 2)} / ${fmt(result.topLsLast, 4)}</span><div class="analysis-metric-note">${explainOiTopLs(result)}</div></div>
+          <div class="analysis-metric"><span class="k">主动买卖（均值）</span><span class="v">${fmt(result.takerLast, 4)} <span class="small">(${fmt(result.takerMean, 4)})</span></span><div class="analysis-metric-note">${explainTaker(result)}</div></div>
+          <div class="analysis-metric"><span class="k">基差 / 盘口失衡</span><span class="v">${pct(result.basisPct, 4)} / ${pct(result.imbalance * 100, 2)}</span><div class="analysis-metric-note">${explainBasisImbalance(result)}</div></div>
+          <div class="analysis-metric"><span class="k">抗插针S/R（30根）</span><span class="v">${fmtPriceSmart(result.support)} ~ ${fmtPriceSmart(result.resistance)}</span><div class="analysis-metric-note">${explainSupportResistance(result)}</div></div>
+          <div class="analysis-metric"><span class="k">盘口集中度（自定义）</span><span class="v">${concentrationLabel(result.concentrationScore)} (${fmt(concentrationIndex(result.concentrationScore), 4)})</span><div class="analysis-metric-note">${explainConcentration(result)}（基于 depth 挂单金额计算）</div></div>
+        </div>
+        <details class="analysis-details" open>
+          <summary>展开详细解读</summary>
+          <div class="analysis-details-text">${narrative}</div>
+          <details>
+            <summary>查看解读依据</summary>
+            <div class="analysis-details-text muted">${narrativeEvidence}</div>
+          </details>
+        </details>
+      `;
+    }
+
+    function renderAutoAnalysis(list) {
+      if (!list.length) {
+        els.analysisResult.innerHTML = "<span class='muted'>自动推荐暂无可用数据</span>";
+        return;
+      }
+      const longList = list.filter((x) => x.plan?.side === "多");
+      const shortList = list.filter((x) => x.plan?.side === "空");
+      const neutralList = list.filter((x) => x.plan?.side !== "多" && x.plan?.side !== "空");
+      lastAutoAnalysis = { longList, shortList, neutralList, generatedAt: Date.now() };
+
+      const toRows = (arr) => arr.map((x, i) => {
+        const p = x.plan;
+        const narrative = buildNarrative(x);
+        const longBias = x.longTermView?.bias || "中性震荡";
+        const align = getShortLongAlignment(x);
+        const alignCls = align === "同向增强" ? "pos" : (align === "短长冲突" ? "warn" : "muted");
+        return `<tr>
+          <td>${i + 1}</td>
+          <td>${x.symbol}</td>
+          <td><span class="grade ${gradeClass(x.grade)}">${x.grade}</span></td>
+          <td>${fmt(x.score, 2)}</td>
+          <td class="${x.score >= 1.5 ? "pos" : x.score <= -1.5 ? "neg" : "warn"}">${x.bias}</td>
+          <td>${longBias}</td>
+          <td><span class="${alignCls}">${align}</span></td>
+          <td>${concentrationLabel(x.concentrationScore)}</td>
+          <td>${(x.riskTags.length ? x.riskTags : ["风险可控"]).map((t) => `<span class="risk-tag">${t}</span>`).join(" ")}</td>
+          <td>${fmtPriceSmart(p.entry[0])} - ${fmtPriceSmart(p.entry[1])}</td>
+          <td>${formatTakeProfitText(p)}</td>
+          <td>${fmtPriceSmart(p.sl)}</td>
+          <td>${narrative}</td>
+        </tr>`;
+      }).join("");
+      const longRows = toRows(longList);
+      const shortRows = toRows(shortList);
+      const neutralRows = toRows(neutralList);
+
+      els.analysisResult.innerHTML = `
+        <div class="small">自动模式已把结果拆分为看多/看空/观望三组，方便直接执行。每个币都带文字分析，帮助快速判断原因。</div>
+        <div style="margin-top:8px;"><strong class="pos">看多列表（${longList.length}）</strong></div>
+        <div class="table-wrap" style="max-height: 34vh; margin-top: 8px;">
+          <table>
+            <thead>
+              <tr><th>#</th><th>币种</th><th>评级</th><th>分数</th><th>结论</th><th>长线偏向</th><th>短长一致性</th><th>盘口集中度(自定义)</th><th>风险标签</th><th>入场区</th><th>止盈</th><th>止损</th><th>文字分析</th></tr>
+            </thead>
+            <tbody>${longRows || "<tr><td colspan='13' class='muted'>暂无看多候选</td></tr>"}</tbody>
+          </table>
+        </div>
+        <div style="margin-top:10px;"><strong class="neg">看空列表（${shortList.length}）</strong></div>
+        <div class="table-wrap" style="max-height: 26vh; margin-top: 8px;">
+          <table>
+            <thead>
+              <tr><th>#</th><th>币种</th><th>评级</th><th>分数</th><th>结论</th><th>长线偏向</th><th>短长一致性</th><th>盘口集中度(自定义)</th><th>风险标签</th><th>入场区</th><th>止盈</th><th>止损</th><th>文字分析</th></tr>
+            </thead>
+            <tbody>${shortRows || "<tr><td colspan='13' class='muted'>暂无看空候选</td></tr>"}</tbody>
+          </table>
+        </div>
+        <div style="margin-top:10px;"><strong class="warn">观望列表（${neutralList.length}）</strong></div>
+        <div class="table-wrap" style="max-height: 22vh; margin-top: 8px;">
+          <table>
+            <thead>
+              <tr><th>#</th><th>币种</th><th>评级</th><th>分数</th><th>结论</th><th>长线偏向</th><th>短长一致性</th><th>盘口集中度(自定义)</th><th>风险标签</th><th>入场区</th><th>止盈</th><th>止损</th><th>文字分析</th></tr>
+            </thead>
+            <tbody>${neutralRows || "<tr><td colspan='13' class='muted'>暂无观望候选</td></tr>"}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function getAnalysisUniverse(limit = 240) {
+      const spotMap = new Map(spotRows.map((s) => [s.symbol, s]));
+      const futuresMap = new Map(futuresRows.map((f) => [f.symbol, f]));
+      const allSymbols = new Set([...spotMap.keys(), ...futuresMap.keys()]);
+      const rows = [...allSymbols].map((symbol) => {
+        const s = spotMap.get(symbol);
+        const f = futuresMap.get(symbol);
+        const spotVol = s?.quoteVol || 0;
+        const futVol = f?.quoteVol || 0;
+        return {
+          symbol,
+          hasSpot: Boolean(s),
+          hasFutures: Boolean(f),
+          scoreHint: analysisCache.get(symbol)?.score ?? -9999,
+          mixVolume: Math.max(spotVol, futVol),
+          spotVol,
+          futVol
+        };
+      });
+      rows.sort((a, b) => b.mixVolume - a.mixVolume);
+      return rows.slice(0, limit);
+    }
+
+    function updateAnalysisSymbols() {
+      const sortMode = els.analysisSortSelect.value;
+      let commonRows = getAnalysisUniverse(260);
+
+      if (sortMode === "alpha") {
+        commonRows = commonRows.sort((a, b) => String(a.symbol).localeCompare(String(b.symbol)));
+      } else if (sortMode === "score") {
+        commonRows = commonRows.sort((a, b) => {
+          const sa = a.scoreHint;
+          const sb = b.scoreHint;
+          if (sb !== sa) return sb - sa;
+          return (b.mixVolume || 0) - (a.mixVolume || 0);
+        });
+      } else {
+        commonRows = commonRows.sort((a, b) => (b.mixVolume || 0) - (a.mixVolume || 0));
+      }
+
+      const common = commonRows.map((x) => ({
+        symbol: x.symbol,
+        quoteVol: x.mixVolume,
+        hasSpot: x.hasSpot,
+        hasFutures: x.hasFutures
+      }));
+      const keep = els.analysisSymbolSelect.value;
+      els.analysisSymbolSelect.innerHTML = common
+        .map((x) => {
+          const scope = x.hasSpot && x.hasFutures ? "现货+合约" : (x.hasSpot ? "仅现货" : "仅合约");
+          return `<option value="${x.symbol}">${x.symbol} | ${scope} | 24h额 ${fmt(x.quoteVol, 0)}</option>`;
+        })
+        .join("");
+      if (keep && common.some((x) => x.symbol === keep)) els.analysisSymbolSelect.value = keep;
+      if (!els.analysisSymbolSelect.value && common.length) els.analysisSymbolSelect.value = common[0].symbol;
+    }
+
+    function buildCrossExchangeArbRows() {
+      const matrix = new Map();
+      const put = (exchange, row) => {
+        if (!row?.symbol || !row?.price) return;
+        if (!matrix.has(row.symbol)) matrix.set(row.symbol, {});
+        matrix.get(row.symbol)[exchange] = row;
+      };
+
+      futuresRows.forEach((r) => put("Binance", r));
+      bybitSwapRows.forEach((r) => put("Bybit", r));
+      okxSwapRows.forEach((r) => put("OKX", r));
+
+      const rows = [];
+      for (const [symbol, exRows] of matrix.entries()) {
+        const entries = Object.entries(exRows).filter(([, r]) => Number.isFinite(r.price));
+        if (entries.length < 2) continue;
+
+        const sortedByPrice = entries.slice().sort((a, b) => a[1].price - b[1].price);
+        const [buyEx, buyRow] = sortedByPrice[0];
+        const [sellEx, sellRow] = sortedByPrice[sortedByPrice.length - 1];
+        const spreadPct = ((sellRow.price - buyRow.price) / buyRow.price) * 100;
+
+        const buyFundingPct = Number.isFinite(buyRow.fundingPct) ? buyRow.fundingPct : null;
+        const sellFundingPct = Number.isFinite(sellRow.fundingPct) ? sellRow.fundingPct : null;
+        const buyFundingIntervalHours = Number.isFinite(buyRow.fundingIntervalHours) ? buyRow.fundingIntervalHours : null;
+        const sellFundingIntervalHours = Number.isFinite(sellRow.fundingIntervalHours) ? sellRow.fundingIntervalHours : null;
+        const buyFundingHourlyPct = (buyFundingPct !== null && buyFundingIntervalHours) ? (buyFundingPct / buyFundingIntervalHours) : null;
+        const sellFundingHourlyPct = (sellFundingPct !== null && sellFundingIntervalHours) ? (sellFundingPct / sellFundingIntervalHours) : null;
+        const fundingEdgeHourlyPct = (buyFundingHourlyPct !== null && sellFundingHourlyPct !== null)
+          ? (sellFundingHourlyPct - buyFundingHourlyPct)
+          : null;
+        const fundingSpreadPct = fundingEdgeHourlyPct;
+
+        const strategy = (fundingEdgeHourlyPct !== null && fundingEdgeHourlyPct >= 0.001)
+          ? `多 ${buyEx} + 空 ${sellEx}（优先吃资金费差）`
+          : `买 ${buyEx} / 卖 ${sellEx}（价差回归）`;
+        const liq = Math.min(...entries.map(([, r]) => Number.isFinite(r.quoteVol) ? r.quoteVol : 0));
+        const liqBoost = liq > 0 ? Math.min(1.2, Math.log10(liq + 1) / 8) : 0;
+        const score = spreadPct * 0.9 + Math.max(0, fundingEdgeHourlyPct || 0) * 24 * 3.6 + liqBoost;
+
+        rows.push({
+          symbol,
+          buyEx,
+          buyPrice: buyRow.price,
+          buyFundingPct,
+          buyFundingIntervalHours,
+          sellEx,
+          sellPrice: sellRow.price,
+          sellFundingPct,
+          sellFundingIntervalHours,
+          spreadPct,
+          fundingSpreadPct,
+          fundingEdgeHourlyPct,
+          exchanges: entries.map(([ex]) => ex),
+          strategy,
+          score
+        });
+      }
+      return rows.sort((a, b) => b.score - a.score);
+    }
+
+    function formatFundingWithCycle(fundingPct, hours) {
+      if (fundingPct === null || fundingPct === undefined || !Number.isFinite(fundingPct)) return "<span class='muted'>--</span>";
+      const rateHtml = pct(fundingPct, 4);
+      const h = Number.isFinite(hours) ? `${fmt(hours, 0)}h` : "--";
+      return `${rateHtml} <span class="small">(${h})</span>`;
+    }
+
+    function getCrossVenueSignal(symbol) {
+      const rows = [];
+      const bn = futuresRows.find((x) => x.symbol === symbol);
+      const bb = bybitSwapRows.find((x) => x.symbol === symbol);
+      const ok = okxSwapRows.find((x) => x.symbol === symbol);
+      if (bn?.price) rows.push({ exchange: "Binance", price: bn.price, changePct: bn.changePct });
+      if (bb?.price) rows.push({ exchange: "Bybit", price: bb.price, changePct: bb.changePct });
+      if (ok?.price) rows.push({ exchange: "OKX", price: ok.price, changePct: ok.changePct });
+      if (rows.length < 2) return null;
+
+      const prices = rows.map((x) => x.price).filter((x) => Number.isFinite(x));
+      if (prices.length < 2) return null;
+      const minP = Math.min(...prices);
+      const maxP = Math.max(...prices);
+      const meanP = prices.reduce((a, b) => a + b, 0) / prices.length;
+      const dispersionPct = meanP ? ((maxP - minP) / meanP) * 100 : null;
+
+      const signed = rows
+        .map((x) => x.changePct)
+        .filter((x) => Number.isFinite(x))
+        .map((x) => x > 0 ? 1 : (x < 0 ? -1 : 0));
+      const avgSign = signed.length ? signed.reduce((a, b) => a + b, 0) / signed.length : 0;
+      const consensus = avgSign >= 0.5 ? "up" : (avgSign <= -0.5 ? "down" : "mixed");
+      return {
+        venues: rows.length,
+        dispersionPct,
+        consensus
+      };
+    }
+
+    function selectAutoRecommendations(analyses, topN) {
+      const longs = analyses
+        .filter((x) => x.plan?.side === "多")
+        .sort((a, b) => b.score - a.score);
+      const shorts = analyses
+        .filter((x) => x.plan?.side === "空")
+        .sort((a, b) => a.score - b.score);
+      const neutrals = analyses
+        .filter((x) => x.plan?.side !== "多" && x.plan?.side !== "空")
+        .sort((a, b) => Math.abs(b.score) - Math.abs(a.score));
+
+      let longTarget = Math.min(longs.length, Math.ceil(topN / 2));
+      let shortTarget = Math.min(shorts.length, Math.floor(topN / 2));
+      let remaining = topN - longTarget - shortTarget;
+
+      if (remaining > 0) {
+        const longExtra = Math.min(remaining, Math.max(0, longs.length - longTarget));
+        longTarget += longExtra;
+        remaining -= longExtra;
+      }
+      if (remaining > 0) {
+        const shortExtra = Math.min(remaining, Math.max(0, shorts.length - shortTarget));
+        shortTarget += shortExtra;
+        remaining -= shortExtra;
+      }
+
+      const picked = [
+        ...longs.slice(0, longTarget),
+        ...shorts.slice(0, shortTarget)
+      ];
+
+      if (picked.length < topN) {
+        const already = new Set(picked.map((x) => x.symbol));
+        const leftovers = [
+          ...longs.slice(longTarget),
+          ...shorts.slice(shortTarget),
+          ...neutrals
+        ]
+          .filter((x) => !already.has(x.symbol))
+          .sort((a, b) => Math.abs(b.score) - Math.abs(a.score));
+        picked.push(...leftovers.slice(0, topN - picked.length));
+      }
+
+      return picked.slice(0, topN);
+    }
+
+    async function runAnalysis() {
+      const mode = els.analysisModeSelect.value;
+      els.analysisResult.innerHTML = "<span class='muted'>分析中...</span>";
+      if (mode === "manual") {
+        const symbol = els.analysisSymbolSelect.value;
+        if (!symbol) {
+          els.analysisResult.innerHTML = "<span class='muted'>请先选择币种</span>";
+          return;
+        }
+        try {
+          const one = await analyzeSymbol(symbol);
+          if (one) analysisCache.set(symbol, one);
+          renderManualAnalysis(one);
+        } catch (e) {
+          lastManualAnalysis = null;
+          els.analysisResult.innerHTML = `<span class="warn">该币分析失败：${e?.message || e}。可换币或稍后重试。</span>`;
+        }
+        return;
+      }
+
+      const topN = Math.max(3, Math.min(200, Number(els.analysisTopNInput.value) || 8));
+      const universeLimit = Math.min(500, Math.max(topN * 4, 60));
+      const candidates = getAnalysisUniverse(universeLimit).map((x) => x.symbol);
+      const analyses = [];
+      const batchSize = 6;
+      for (let i = 0; i < candidates.length; i += batchSize) {
+        const batch = candidates.slice(i, i + batchSize);
+        const settled = await Promise.allSettled(batch.map((symbol) => analyzeSymbol(symbol)));
+        for (let j = 0; j < settled.length; j += 1) {
+          if (settled[j].status === "fulfilled" && settled[j].value) {
+            const r = settled[j].value;
+            analyses.push(r);
+            analysisCache.set(r.symbol, r);
+          }
+        }
+        els.status.textContent = `自动分析进行中：${Math.min(i + batch.length, candidates.length)}/${candidates.length}`;
+      }
+      const alignOnly = Boolean(els.analysisAlignOnlyChk?.checked);
+      const longBiasFilter = els.analysisLongBiasFilter?.value || "all";
+      const alignedAnalyses = alignOnly
+        ? analyses.filter((x) => getShortLongAlignment(x) === "同向增强")
+        : analyses;
+      const longBiasMatchedAnalyses = alignedAnalyses.filter((x) => {
+        if (longBiasFilter === "all") return true;
+        const lb = x.longTermView?.bias || "";
+        if (longBiasFilter === "long") return lb.includes("偏多");
+        if (longBiasFilter === "short") return lb.includes("偏空");
+        return true;
+      });
+
+      let basePool = longBiasMatchedAnalyses;
+      const filterNotes = ["多空平衡优先"];
+      if (alignOnly) filterNotes.push(`同向过滤候选 ${alignedAnalyses.length}`);
+      if (longBiasFilter !== "all") filterNotes.push(`长线过滤候选 ${longBiasMatchedAnalyses.length}`);
+
+      if (!basePool.length) {
+        if (longBiasFilter !== "all") {
+          basePool = alignedAnalyses;
+          filterNotes.push("长线过滤结果为空，已回退到仅同向/全量");
+        } else if (alignOnly) {
+          basePool = analyses;
+          filterNotes.push("同向候选不足，已回退到全量");
+        }
+      }
+
+      let picked = selectAutoRecommendations(basePool, topN);
+      els.status.textContent = `自动分析完成：候选 ${analyses.length}，入选 ${picked.length}（${filterNotes.join("；")}）`;
+      renderAutoAnalysis(picked);
+    }
+
+    function scheduleManualAnalysis(delayMs = 120) {
+      if (els.analysisModeSelect.value !== "manual") return;
+      if (!els.analysisSymbolSelect.value) return;
+      if (manualAnalyzeTimer) clearTimeout(manualAnalyzeTimer);
+      manualAnalyzeTimer = setTimeout(() => {
+        runAnalysis().catch((e) => {
+          els.analysisResult.innerHTML = `<span class="warn">该币分析失败：${e?.message || e}。可换币或稍后重试。</span>`;
+        });
+      }, delayMs);
+    }
+
+    function switchPage(view, options = {}) {
+      const isAnalysis = view === "analysis";
+      const shouldTriggerAnalysis = Boolean(options.triggerAnalysis);
+      document.body.classList.toggle("page-analysis", isAnalysis);
+      document.body.classList.toggle("page-market", !isAnalysis);
+      els.marketPageBtn.classList.toggle("active", !isAnalysis);
+      els.analysisPageBtn.classList.toggle("active", isAnalysis);
+      try {
+        localStorage.setItem(VIEW_STORAGE_KEY, isAnalysis ? "analysis" : "market");
+      } catch {}
+      if (history && typeof history.replaceState === "function") {
+        history.replaceState(null, "", isAnalysis ? "#analysis" : "#market");
+      }
+      if (isAnalysis && shouldTriggerAnalysis) scheduleManualAnalysis(0);
+    }
+
+    function directionByFunding(fundingPct) {
+      if (fundingPct === null || fundingPct === undefined) return "无";
+      if (fundingPct > 0) return "现货多 + 合约空（收Funding）";
+      if (fundingPct < 0) return "现货空 + 合约多（收Funding，需借币）";
+      return "Funding接近0";
+    }
+
+    function applyOkxFundingMap(okxFundingMap) {
+      okxSwapRows = okxSwapRows.map((r) => {
+        const f = okxFundingMap.get(r.instId) || okxFundingMap.get(r.symbol);
+        return {
+          ...r,
+          fundingPct: f?.fundingPct ?? r.fundingPct ?? null,
+          fundingIntervalHours: f?.fundingIntervalHours ?? r.fundingIntervalHours ?? null
+        };
+      });
+      crossExchangeArbRows = buildCrossExchangeArbRows();
+    }
+
+    async function fetchAll() {
+      const started = Date.now();
+      els.status.textContent = "正在拉取 USDT 现货/合约/资金费率...";
+
+      const prevSpotRows = spotRows;
+      const prevFuturesRows = futuresRows;
+      const prevBybitRows = bybitSwapRows;
+      const prevOkxRows = okxSwapRows;
+      const failedApis = [];
+      const settledToData = (settled, tag) => {
+        if (settled.status === "fulfilled") return settled.value?.data;
+        failedApis.push(`${tag}: ${settled.reason?.message || settled.reason || "unknown"}`);
+        return null;
+      };
+
+      const [spotSettled, futuresSettled, premiumSettled, fundingInfoSettled] = await Promise.allSettled([
+        fetchJsonWithFallback(SPOT_BASES, SPOT_24H_PATH, { maxAttempts: 3 }),
+        fetchJsonWithFallback(FUTURES_BASES, FUTURES_24H_PATH, { maxAttempts: 3 }),
+        fetchJsonWithFallback(FUTURES_BASES, PREMIUM_PATH, { maxAttempts: 3 }),
+        fetchJsonWithFallback(FUTURES_BASES, FUNDING_INFO_PATH, { maxAttempts: 3 })
+      ]);
+      const [bybitResult, okxResult] = await Promise.all([
+        fetchOptionalJsonWithTimeout(BYBIT_BASES, BYBIT_LINEAR_TICKERS_PATH, 4500),
+        fetchOptionalJsonWithTimeout(OKX_BASES, OKX_SWAP_TICKERS_PATH, 4500)
+      ]);
+      const spotData = settledToData(spotSettled, "Binance现货24h");
+      const futuresData = settledToData(futuresSettled, "Binance合约24h");
+      const premiumRaw = settledToData(premiumSettled, "Binance资金费率");
+      const fundingInfoRaw = settledToData(fundingInfoSettled, "Binance资金费周期");
+      const spotRaw = Array.isArray(spotData) ? spotData : [];
+      const futuresRaw = Array.isArray(futuresData) ? futuresData : [];
+
+      const premiumList = Array.isArray(premiumRaw) ? premiumRaw : [premiumRaw];
+      const premiumMap = new Map();
+      for (const p of premiumList) {
+        if (!p.symbol || !String(p.symbol).endsWith(QUOTE_ASSET)) continue;
+        premiumMap.set(p.symbol, num(p.lastFundingRate) !== null ? num(p.lastFundingRate) * 100 : null);
+      }
+
+      const fundingInfoList = Array.isArray(fundingInfoRaw) ? fundingInfoRaw : [fundingInfoRaw];
+      const fundingIntervalMap = new Map();
+      for (const it of fundingInfoList) {
+        if (!it?.symbol || !String(it.symbol).endsWith(QUOTE_ASSET)) continue;
+        const h = num(it.fundingIntervalHours);
+        if (h && h > 0) fundingIntervalMap.set(it.symbol, h);
+      }
+
+      const nextSpotRows = spotRaw
+        .filter((it) => String(it?.symbol || "").endsWith(QUOTE_ASSET))
+        .map((it) => ({
+          symbol: it.symbol,
+          price: num(it.lastPrice),
+          changePct: num(it.priceChangePercent),
+          quoteVol: num(it.quoteVolume)
+        }))
+        .sort((a, b) => (b.quoteVol || -Infinity) - (a.quoteVol || -Infinity));
+      if (spotSettled.status === "fulfilled" || !prevSpotRows.length) {
+        spotRows = nextSpotRows;
+      }
+
+      const nextFuturesRows = futuresRaw
+        .filter((it) => String(it?.symbol || "").endsWith(QUOTE_ASSET))
+        .map((it) => ({
+          symbol: it.symbol,
+          price: num(it.lastPrice),
+          changePct: num(it.priceChangePercent),
+          quoteVol: num(it.quoteVolume),
+          fundingPct: premiumMap.get(it.symbol) ?? null,
+          fundingIntervalHours: fundingIntervalMap.get(it.symbol) || 8
+        }))
+        .sort((a, b) => (b.quoteVol || -Infinity) - (a.quoteVol || -Infinity));
+      if (futuresSettled.status === "fulfilled" || !prevFuturesRows.length) {
+        futuresRows = nextFuturesRows;
+      }
+
+      const bybitRawList = bybitResult?.data?.result?.list || [];
+      const nextBybitRows = bybitRawList
+        .filter((it) => String(it.symbol || "").endsWith(QUOTE_ASSET))
+        .map((it) => ({
+          symbol: String(it.symbol),
+          price: num(it.lastPrice),
+          changePct: num(it.price24hPcnt) !== null ? num(it.price24hPcnt) * 100 : null,
+          quoteVol: num(it.turnover24h),
+          fundingPct: num(it.fundingRate) !== null ? num(it.fundingRate) * 100 : null,
+          fundingIntervalHours: num(it.fundingIntervalHour) || 8
+        }))
+        .sort((a, b) => (b.quoteVol || -Infinity) - (a.quoteVol || -Infinity));
+      bybitSwapRows = bybitResult ? nextBybitRows : prevBybitRows;
+
+      const okxRawList = okxResult?.data?.data || [];
+      const nextOkxRows = okxRawList
+        .map((it) => {
+          const symbol = okxInstIdToSymbol(it.instId);
+          if (!symbol) return null;
+          return {
+            instId: String(it.instId || ""),
+            symbol,
+            price: num(it.last),
+            changePct: (num(it.open24h) && num(it.last)) ? ((num(it.last) - num(it.open24h)) / num(it.open24h)) * 100 : null,
+            quoteVol: num(it.volCcy24h) ?? num(it.vol24h),
+            fundingPct: null,
+            fundingIntervalHours: null
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => (b.quoteVol || -Infinity) - (a.quoteVol || -Infinity));
+      okxSwapRows = okxResult ? nextOkxRows : prevOkxRows;
+
+      const spotMap = new Map(spotRows.map((r) => [r.symbol, r]));
+      arbRows = futuresRows
+        .filter((f) => spotMap.has(f.symbol))
+        .map((f) => {
+          const s = spotMap.get(f.symbol);
+          const basisPct = s.price ? ((f.price - s.price) / s.price) * 100 : null;
+          const intervalHours = f.fundingIntervalHours || 8;
+          const hourlyGross = f.fundingPct === null ? null : (NOTIONAL_USDT * Math.abs(f.fundingPct) / 100) / intervalHours;
+          return {
+            symbol: f.symbol,
+            spotPrice: s.price,
+            futuresPrice: f.price,
+            basisPct,
+            fundingPct: f.fundingPct,
+            fundingIntervalHours: intervalHours,
+            direction: directionByFunding(f.fundingPct),
+            hourlyGross
+          };
+        })
+        .sort((a, b) => (b.hourlyGross || -Infinity) - (a.hourlyGross || -Infinity));
+
+      crossExchangeArbRows = buildCrossExchangeArbRows();
+      const overlapSymbols = new Set([
+        ...futuresRows.map((x) => x.symbol),
+        ...bybitSwapRows.map((x) => x.symbol)
+      ]);
+      const okxFundingInstIds = okxSwapRows
+        .filter((x) => overlapSymbols.has(x.symbol))
+        .map((x) => x.instId);
+      const okxFundingUniverse = okxFundingInstIds.length ? okxFundingInstIds : okxSwapRows.map((x) => x.instId);
+      const okxFundingTarget = okxFundingUniverse.length;
+
+      sourceState.binance = {
+        ok: spotRows.length > 0 && futuresRows.length > 0,
+        count: futuresRows.length,
+        note: spotRows.length > 0 && futuresRows.length > 0 ? "正常" : "缺数据"
+      };
+      sourceState.bybit = {
+        ok: bybitSwapRows.length > 0,
+        count: bybitSwapRows.length,
+        note: bybitSwapRows.length > 0 ? "正常" : "为空/CORS"
+      };
+      sourceState.okx = {
+        ok: okxSwapRows.length > 0,
+        count: okxSwapRows.length,
+        note: okxSwapRows.length > 0
+          ? `加载中(FR 0/${okxFundingTarget})`
+          : "为空/CORS"
+      };
+      renderSourceHealth();
+
+      const cost = ((Date.now() - started) / 1000).toFixed(2);
+      const bybitTxt = bybitSwapRows.length ? `Bybit ${bybitSwapRows.length}` : "Bybit 0";
+      const okxTxt = okxSwapRows.length ? `OKX ${okxSwapRows.length}` : "OKX 0";
+      const warnTxt = failedApis.length ? ` | 部分接口失败：${failedApis.slice(0, 2).join("；")}` : "";
+      els.status.textContent = `加载完成：现货 ${spotRows.length}，合约 ${futuresRows.length}，本所套利 ${arbRows.length}，跨所套利 ${crossExchangeArbRows.length}，${bybitTxt}，${okxTxt}，耗时 ${cost}s${warnTxt}`;
+      els.lastUpdate.textContent = new Date().toLocaleTimeString();
+      updateAnalysisSymbols();
+      render();
+
+      if (okxSwapRows.length > 0 && okxFundingTarget > 0) {
+        const initialInstIds = okxFundingUniverse.slice(0, OKX_FUNDING_MAX_SYMBOLS);
+        fetchOkxFundingSnapshot(
+          initialInstIds,
+          OKX_FUNDING_MAX_SYMBOLS
+        ).then((okxFundingMap) => {
+          applyOkxFundingMap(okxFundingMap);
+          const frCount = okxSwapRows.filter((x) => x.fundingPct !== null).length;
+          sourceState.okx = {
+            ok: frCount > 0,
+            count: okxSwapRows.length,
+            note: `正常(FR ${frCount}/${okxFundingTarget})`
+          };
+          renderSourceHealth();
+          render();
+          els.status.textContent = `OKX资金费首批完成：${frCount}/${okxFundingTarget}`;
+
+          const remainingInstIds = okxFundingUniverse.slice(OKX_FUNDING_MAX_SYMBOLS);
+          if (remainingInstIds.length) {
+            (async () => {
+              for (let i = 0; i < remainingInstIds.length; i += OKX_FUNDING_BACKGROUND_BATCH) {
+                const chunk = remainingInstIds.slice(i, i + OKX_FUNDING_BACKGROUND_BATCH);
+                try {
+                  const moreMap = await fetchOkxFundingSnapshot(chunk, chunk.length);
+                  applyOkxFundingMap(moreMap);
+                  const rollingCount = okxSwapRows.filter((x) => x.fundingPct !== null).length;
+                  sourceState.okx = {
+                    ok: rollingCount > 0,
+                    count: okxSwapRows.length,
+                    note: `正常(FR ${rollingCount}/${okxFundingTarget})`
+                  };
+                  renderSourceHealth();
+                  render();
+                  els.status.textContent = `OKX资金费后台补全中：${rollingCount}/${okxFundingTarget}`;
+                } catch {
+                  // 单批失败不阻断后续批次
+                }
+                await new Promise((resolve) => setTimeout(resolve, 350));
+              }
+              const finalCount = okxSwapRows.filter((x) => x.fundingPct !== null).length;
+              els.status.textContent = `OKX资金费补全完成：${finalCount}/${okxFundingTarget}`;
+            })();
+          }
+        }).catch(() => {
+          sourceState.okx = {
+            ok: false,
+            count: okxSwapRows.length,
+            note: `FR补全失败`
+          };
+          renderSourceHealth();
+        });
+      }
+    }
+
+    function render() {
+      const kw = els.searchInput.value.trim().toUpperCase();
+      const spotFiltered = kw ? spotRows.filter((r) => r.symbol.includes(kw)) : spotRows;
+      const futuresFiltered = kw ? futuresRows.filter((r) => r.symbol.includes(kw)) : futuresRows;
+      const arbFiltered = kw ? arbRows.filter((r) => r.symbol.includes(kw)) : arbRows;
+      const crossFilteredRaw = kw ? crossExchangeArbRows.filter((r) => r.symbol.includes(kw)) : crossExchangeArbRows;
+      const crossFiltered = crossFilteredRaw
+        .map((r) => ({ r, pnl: getCrossArbNetPnl(r) }))
+        .sort((a, b) => (b.pnl.netHourly || -Infinity) - (a.pnl.netHourly || -Infinity));
+
+      els.spotCount.textContent = fmt(spotFiltered.length, 0);
+      els.futuresCount.textContent = fmt(futuresFiltered.length, 0);
+      els.arbCount.textContent = fmt(arbFiltered.length, 0);
+
+      const best = arbFiltered.find((x) => x.hourlyGross !== null && Number.isFinite(x.hourlyGross));
+      const netCandidates = arbFiltered.map((r) => ({ r, pnl: getArbNetPnl(r) }))
+        .filter((x) => Number.isFinite(x.pnl.netHourly))
+        .sort((a, b) => b.pnl.netHourly - a.pnl.netHourly);
+      els.bestHourlyPnl.innerHTML = netCandidates.length
+        ? `<span class="${netCandidates[0].pnl.netHourly > 0 ? "pos" : "neg"}">${fmt(netCandidates[0].pnl.netHourly, 4)} U</span>`
+        : "<span class='muted'>--</span>";
+
+      els.spotBody.innerHTML = spotFiltered.map((r, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${r.symbol}</td>
+          <td>${fmt(r.price, 8)}</td>
+          <td>${pct(r.changePct)}</td>
+          <td>${fmt(r.quoteVol, 2)}</td>
+        </tr>
+      `).join("") || "<tr><td colspan='5' class='muted'>无匹配数据</td></tr>";
+
+      els.futuresBody.innerHTML = futuresFiltered.map((r, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${r.symbol}</td>
+          <td>${fmt(r.price, 8)}</td>
+          <td>${pct(r.changePct)}</td>
+          <td>${fmt(r.quoteVol, 2)}</td>
+          <td>${pct(r.fundingPct, 4)}</td>
+          <td>${fmt(r.fundingIntervalHours, 0)}</td>
+        </tr>
+      `).join("") || "<tr><td colspan='7' class='muted'>无匹配数据</td></tr>";
+
+      els.arbBody.innerHTML = arbFiltered.map((r, i) => {
+        const pnl = getArbNetPnl(r);
+        return `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${r.symbol}</td>
+            <td>${fmt(r.spotPrice, 8)}</td>
+            <td>${fmt(r.futuresPrice, 8)}</td>
+            <td>${pct(r.basisPct, 4)}</td>
+            <td>${pct(r.fundingPct, 4)}</td>
+            <td>${fmt(r.fundingIntervalHours, 0)}</td>
+            <td>${r.fundingPct === 0 ? "<span class='warn'>Funding弱</span>" : r.direction}</td>
+            <td>${r.hourlyGross === null ? "<span class='muted'>--</span>" : `<span class='${pnl.grossHourly > 0 ? "pos" : "muted"}'>${fmt(pnl.grossHourly, 4)} U</span>`}</td>
+            <td>${r.hourlyGross === null ? "<span class='muted'>--</span>" : `<span class='${pnl.netHourly >= 0 ? "pos" : "neg"}'>${fmt(pnl.netHourly, 4)} U</span>`}</td>
+            <td>${r.hourlyGross === null ? "<span class='muted'>--</span>" : `<span class='${pnl.netDaily >= 0 ? "pos" : "neg"}'>${fmt(pnl.netDaily, 4)} U</span>`}</td>
+          </tr>
+        `;
+      }).join("") || "<tr><td colspan='11' class='muted'>无匹配数据</td></tr>";
+
+      if (els.crossArbBody) {
+        els.crossArbBody.innerHTML = crossFiltered.map(({ r, pnl }, i) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${r.symbol}</td>
+            <td><span class="ex-tag">${r.buyEx}</span></td>
+            <td>${fmt(r.buyPrice, 8)}</td>
+            <td><span class="ex-tag">${r.sellEx}</span></td>
+            <td>${fmt(r.sellPrice, 8)}</td>
+            <td>${formatFundingWithCycle(r.buyFundingPct, r.buyFundingIntervalHours)}</td>
+            <td>${formatFundingWithCycle(r.sellFundingPct, r.sellFundingIntervalHours)}</td>
+            <td>${pct(r.spreadPct, 4)}</td>
+            <td>${r.fundingEdgeHourlyPct === null ? "<span class='muted'>--</span>" : pct(r.fundingEdgeHourlyPct, 4)}</td>
+            <td>${r.exchanges.map((ex) => `<span class="ex-tag">${ex}</span>`).join("")}</td>
+            <td>${r.strategy}</td>
+            <td><span class='${pnl.grossHourly > 0 ? "pos" : "muted"}'>${fmt(pnl.grossHourly, 4)} U</span></td>
+            <td><span class='${pnl.netHourly >= 0 ? "pos" : "neg"}'>${fmt(pnl.netHourly, 4)} U</span></td>
+            <td><span class='${pnl.netDaily >= 0 ? "pos" : "neg"}'>${fmt(pnl.netDaily, 4)} U</span></td>
+            <td>${fmt(r.score, 3)}</td>
+          </tr>
+        `).join("") || "<tr><td colspan='16' class='muted'>无匹配数据</td></tr>";
+      }
+    }
+
+    function clearAutoRefresh() {
+      if (!autoTimer) return;
+      clearInterval(autoTimer);
+      autoTimer = null;
+      els.toggleAutoBtn.textContent = "开启自动刷新";
+    }
+
+    function startAutoRefresh() {
+      if (location.protocol === "file:") {
+        els.status.textContent = "file:// 环境会触发浏览器安全限制。请先用 http://localhost 启动后再开自动刷新。";
+        return;
+      }
+      const sec = Number(els.intervalInput.value);
+      if (!Number.isFinite(sec) || sec < 5) {
+        els.status.textContent = "自动刷新间隔最小 5 秒";
+        return;
+      }
+      clearAutoRefresh();
+      autoTimer = setInterval(doRefresh, sec * 1000);
+      els.toggleAutoBtn.textContent = "关闭自动刷新";
+      els.status.textContent = `自动刷新已开启：每 ${sec} 秒刷新一次`;
+    }
+
+    async function doRefresh() {
+      try {
+        if (location.protocol === "file:") {
+          els.status.textContent = "当前是 file:// 打开，浏览器会拦截跨域请求。请用 http://localhost:8080/dashboard.html 打开。";
+          clearAutoRefresh();
+          return;
+        }
+        await fetchAll();
+        try {
+          await runAnalysis();
+        } catch (analysisErr) {
+          els.analysisResult.innerHTML = `<span class="warn">分析失败：${analysisErr?.message || analysisErr}</span>`;
+        }
+      } catch (err) {
+        const root = err?.cause || err;
+        const msg = String(root?.message || err?.message || err || "");
+        if (msg.includes("HTTP 451")) {
+          clearAutoRefresh();
+          els.status.textContent = "刷新失败：Binance 对当前网络返回 451（法务/区域限制）。自动刷新已暂停。";
+          return;
+        }
+        if (isLikelyCorsOrNetworkError(root)) {
+          clearAutoRefresh();
+          els.status.textContent = "刷新失败：网络/CORS 限制。请用本地 http 服务打开，并确认当前网络可访问 Binance。";
+          return;
+        }
+        els.status.textContent = "刷新失败：" + (err.message || String(err));
+      }
+    }
+
+    els.refreshBtn.addEventListener("click", doRefresh);
+    els.marketPageBtn.addEventListener("click", () => switchPage("market", { triggerAnalysis: false }));
+    els.analysisPageBtn.addEventListener("click", () => switchPage("analysis", { triggerAnalysis: false }));
+    els.searchInput.addEventListener("input", render);
+    els.analysisSortSelect.addEventListener("change", () => {
+      updateAnalysisSymbols();
+    });
+    els.analysisSymbolSelect.addEventListener("change", () => {
+      scheduleManualAnalysis();
+    });
+    [els.feeRateInput, els.borrowAprInput, els.holdHoursInput].forEach((inputEl) => {
+      inputEl.addEventListener("input", render);
+      inputEl.addEventListener("change", render);
+    });
+    els.analysisModeSelect.addEventListener("change", () => {
+      if (els.analysisModeSelect.value === "manual") {
+        els.analysisSymbolSelect.disabled = false;
+        scheduleManualAnalysis(0);
+      } else {
+        els.analysisSymbolSelect.disabled = true;
+      }
+    });
+    els.analysisModeSelect.dispatchEvent(new Event("change"));
+    els.runAnalysisBtn.addEventListener("click", runAnalysis);
+    els.downloadManualBtn.addEventListener("click", downloadManualAnalysis);
+    els.downloadAutoBtn.addEventListener("click", downloadAutoAnalysis);
+    els.intervalInput.addEventListener("change", () => {
+      if (autoTimer) startAutoRefresh();
+    });
+    els.toggleAutoBtn.addEventListener("click", () => {
+      if (autoTimer) {
+        clearAutoRefresh();
+        els.status.textContent = "自动刷新已关闭";
+      } else {
+        startAutoRefresh();
+      }
+    });
+
+    const initialView = (() => {
+      const hash = String(location.hash || "").toLowerCase();
+      if (hash === "#analysis") return "analysis";
+      if (hash === "#market") return "market";
+      try {
+        const saved = localStorage.getItem(VIEW_STORAGE_KEY);
+        if (saved === "analysis" || saved === "market") return saved;
+      } catch {}
+      return "market";
+    })();
+    switchPage(initialView, { triggerAnalysis: false });
+    renderSourceHealth();
+    doRefresh();
+  </script>
+</body>
+</html>
